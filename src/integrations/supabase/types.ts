@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      emotions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          memo: string | null
+          score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          memo?: string | null
+          score: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          memo?: string | null
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_results: {
         Row: {
           answers: Json
