@@ -45,7 +45,10 @@ export type Database = {
         Row: {
           answers: Json
           created_at: string
+          duration_seconds: number | null
           id: string
+          matched_syndromes: Json | null
+          risk_level: string | null
           scores: Json
           test_id: string
           total_score: number
@@ -54,7 +57,10 @@ export type Database = {
         Insert: {
           answers?: Json
           created_at?: string
+          duration_seconds?: number | null
           id?: string
+          matched_syndromes?: Json | null
+          risk_level?: string | null
           scores?: Json
           test_id: string
           total_score?: number
@@ -63,64 +69,53 @@ export type Database = {
         Update: {
           answers?: Json
           created_at?: string
+          duration_seconds?: number | null
           id?: string
+          matched_syndromes?: Json | null
+          risk_level?: string | null
           scores?: Json
           test_id?: string
           total_score?: number
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "test_results_test_id_fkey"
-            columns: ["test_id"]
-            isOneToOne: false
-            referencedRelation: "tests"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tests: {
         Row: {
           category: string
-          category_label: string
           created_at: string
           description: string
           duration_minutes: number
           id: string
-          is_ai_recommended: boolean
           name: string
           question_count: number
           questions: Json
-          sub_areas: Json
-          syndromes: Json
+          recommended: boolean
+          subdomains: Json
         }
         Insert: {
           category: string
-          category_label: string
           created_at?: string
           description: string
           duration_minutes?: number
-          id?: string
-          is_ai_recommended?: boolean
+          id: string
           name: string
           question_count?: number
           questions?: Json
-          sub_areas?: Json
-          syndromes?: Json
+          recommended?: boolean
+          subdomains?: Json
         }
         Update: {
           category?: string
-          category_label?: string
           created_at?: string
           description?: string
           duration_minutes?: number
           id?: string
-          is_ai_recommended?: boolean
           name?: string
           question_count?: number
           questions?: Json
-          sub_areas?: Json
-          syndromes?: Json
+          recommended?: boolean
+          subdomains?: Json
         }
         Relationships: []
       }
