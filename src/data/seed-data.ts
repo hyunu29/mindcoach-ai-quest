@@ -972,3 +972,300 @@ export function detectCrisisKeywords(
     normalizedText.includes(ck.keyword.replace(/\s+/g, ""))
   );
 }
+
+// ─── 프론트엔드용 검사 목록 (testList) ──────────────────────
+
+export const testList = [
+  {
+    id: "A",
+    name: "비교불안·SNS 의존 검사",
+    category: "A",
+    categoryLabel: "비교불안·SNS 의존",
+    description: "친구들과의 비교, SNS 사용이 학습에 미치는 영향을 확인합니다.",
+    questionCount: 20,
+    duration: 3,
+    recommended: true,
+    subdomains: [
+      "비교 불안 (Comparative Anxiety)",
+      "SNS 의존 (Social Media Dependency)",
+      "집중력 저하 (Reduced Focus)",
+      "자기통제·균형 (Self-Control & Balance)"
+    ]
+  },
+  {
+    id: "A-2",
+    name: "학업 소진(번아웃) 검사",
+    category: "A",
+    categoryLabel: "비교불안·SNS 의존",
+    description: "학업으로 인한 정서적 소진과 회복 자원을 평가합니다.",
+    questionCount: 20,
+    duration: 3,
+    recommended: false,
+    subdomains: [
+      "정서적 소진 (Emotional Exhaustion)",
+      "냉소·이탈 (Cynicism/Detachment)",
+      "효능감 저하 (Inefficacy)",
+      "회복 자원 (Recovery/Resources)"
+    ]
+  },
+  {
+    id: "A-1",
+    name: "완벽주의 루틴 강박 검사",
+    category: "A",
+    categoryLabel: "비교불안·SNS 의존",
+    description: "계획과 루틴에 대한 완벽주의 경향을 측정합니다.",
+    questionCount: 20,
+    duration: 3,
+    recommended: false,
+    subdomains: [
+      "완벽주의적 루틴 고집 (Perfectionistic Routine Fixation)",
+      "통제 불안 (Control Anxiety)",
+      "자기비난·죄책감 (Self-Blame & Guilt)",
+      "유연성 부족 (Lack of Flexibility)"
+    ]
+  },
+  {
+    id: "B",
+    name: "강박적 공부 증후군 검사",
+    category: "B",
+    categoryLabel: "번아웃·분노·소진",
+    description: "공부에 대한 강박적 집착과 불안을 측정합니다.",
+    questionCount: 20,
+    duration: 3,
+    recommended: true,
+    subdomains: [
+      "완벽주의적 집착형 (Perfectionistic Obsession)",
+      "불안 회피형 (Anxiety Avoidance)",
+      "자기비판 불안 (Self-Critical Anxiety)",
+      "자기조절 결핍형 (Self-Regulation Deficiency)"
+    ]
+  },
+  {
+    id: "B-1",
+    name: "만성피로 검사",
+    category: "B",
+    categoryLabel: "번아웃·분노·소진",
+    description: "신체적·정서적·인지적 피로와 회복 부족을 평가합니다.",
+    questionCount: 20,
+    duration: 3,
+    recommended: false,
+    subdomains: [
+      "신체적 소진 (Physical Exhaustion)",
+      "정서적 번아웃 (Emotional Burnout)",
+      "인지 과부하 (Cognitive Overload)",
+      "회복 부족 (Lack of Recovery)"
+    ]
+  },
+  {
+    id: "E-1",
+    name: "시험불안 검사",
+    category: "E",
+    categoryLabel: "시험불안·집중력·정서",
+    description: "시험 상황에서의 불안 반응과 대처 능력을 측정합니다.",
+    questionCount: 20,
+    duration: 3,
+    recommended: true,
+    subdomains: [
+      "수행 불안 (Performance Anxiety)",
+      "인지 과부하 (Cognitive Overload)",
+      "자기조절 상실 (Loss of Self-Regulation)",
+      "완벽주의 압박 (Perfectionism Pressure)"
+    ]
+  }
+];
+
+// ─── 검사 문항 데이터 (testQuestions) ────────────────────────
+
+export const testQuestions: Record<string, { subdomain: string; questions: string[] }[]> = {
+  "A": [
+    {
+      subdomain: "비교 불안 (Comparative Anxiety)",
+      questions: [
+        "친구들의 공부량이나 성적을 보면 불안해진다.",
+        "다른 사람의 성공 소식을 들으면 마음이 흔들린다.",
+        "나만 뒤처지고 있는 것 같은 느낌이 든다.",
+        "SNS에서 남들의 공부 인증을 보면 조급해진다.",
+        "남들과 비교하지 않으려 해도 자꾸 비교하게 된다."
+      ]
+    },
+    {
+      subdomain: "SNS 의존 (Social Media Dependency)",
+      questions: [
+        "공부 중에도 SNS 알림이 신경 쓰인다.",
+        "SNS를 하지 않으면 세상과 단절된 느낌이 든다.",
+        "공부 대신 SNS를 확인하다 보면 시간이 훌쩍 간다.",
+        "SNS에 나도 뭔가 올려야 안심이 된다.",
+        "SNS를 끊으면 불안하거나 허전하다."
+      ]
+    },
+    {
+      subdomain: "집중력 저하 (Reduced Focus)",
+      questions: [
+        "공부 중 집중이 자주 끊기고 다른 생각이 든다.",
+        "잠깐 쉬려다 스마트폰을 보면 공부 흐름이 완전히 깨진다.",
+        "계획보다 SNS, 인터넷에 더 많은 시간을 쓴다.",
+        "해야 할 일을 미루고 정보 검색만 하며 시간을 보낸다.",
+        "공부 중 갑자기 '이게 맞나?'라는 생각이 올라온다."
+      ]
+    },
+    {
+      subdomain: "자기통제·균형 (Self-Control & Balance) [역문항]",
+      questions: [
+        "SNS를 하더라도 공부와 생활의 균형을 유지한다.",
+        "남들과 달라도 내 속도를 존중하려고 노력한다.",
+        "잠시 휴식해도 다시 집중할 수 있다.",
+        "비교 대신 내 성장에 집중하려고 한다.",
+        "디지털 기기를 스스로 통제할 수 있다."
+      ]
+    }
+  ],
+  "A-2": [
+    {
+      subdomain: "정서적 소진 (Emotional Exhaustion)",
+      questions: [
+        "공부를 시작하려고 하면 이미 지쳐 있는 느낌이다.",
+        "하루를 마치면 정신적으로 완전히 소모된 느낌이 든다.",
+        "쉬어도 피로가 잘 회복되지 않는다.",
+        "공부 생각만 해도 답답하고 숨이 막힌다.",
+        "최근 한달 동안 예전보다 짜증이 더 많아졌다."
+      ]
+    },
+    {
+      subdomain: "냉소·이탈 (Cynicism/Detachment)",
+      questions: [
+        "공부가 무슨 의미가 있나 싶을 때가 자주 있다.",
+        "성적이나 평가가 나와도 별 감흥이 없다.",
+        "주변 사람들이 공부하라는 말이 들리면 더 멀어지고 싶다.",
+        "과목이나 선생님에 대해 부정적으로만 보게 된다.",
+        "학습 자체에 흥미가 거의 느껴지지 않는다."
+      ]
+    },
+    {
+      subdomain: "효능감 저하 (Inefficacy)",
+      questions: [
+        "열심히 해도 성과가 없다는 생각을 자주 한다.",
+        "나는 중요한 순간에 실수를 반복할 것 같다.",
+        "계획을 세워도 지키기 어렵다.",
+        "나보다 잘하는 친구들과 비교하면 나는 늘 부족하다.",
+        "이번 시험에도 기대만큼 성과를 내기 힘들 것 같다."
+      ]
+    },
+    {
+      subdomain: "회복 자원 (Recovery/Resources) [역문항]",
+      questions: [
+        "힘들어도 나를 회복시키는 방법을 알고 실천한다.",
+        "공부, 휴식 리듬(수면/식사/운동 등)을 대체로 유지한다.",
+        "스트레스를 느끼면 적절한 도움을 요청할 수 있다.",
+        "작은 성취를 찾아 스스로 격려한다.",
+        "벅찰 때에도 핵심 과제부터 우선순위대로 처리한다."
+      ]
+    }
+  ],
+  "E-1": [
+    {
+      subdomain: "수행 불안 (Performance Anxiety)",
+      questions: [
+        "시험장에 들어가면 평소보다 심장이 빠르게 뛴다.",
+        "문제를 읽어도 내용이 눈에 들어오지 않는다.",
+        "중요한 순간이 오면 손에 힘이 빠지고 머리가 멍해진다.",
+        "시험 중 사소한 소리나 시선이 신경 쓰인다.",
+        "긴장하면 기억하던 내용이 갑자기 떠오르지 않는다."
+      ]
+    },
+    {
+      subdomain: "인지 과부하 (Cognitive Overload)",
+      questions: [
+        "공부할 내용이 너무 많아 어디서부터 해야 할지 막막하다.",
+        "머릿속이 복잡해서 생각이 정리되지 않는다.",
+        "문제를 보면 동시에 여러 생각이 떠올라 혼란스럽다.",
+        "시험 전날엔 정보가 뒤섞여 버린 느낌이 든다.",
+        "한번 멈추면 다시 집중하기 힘들다."
+      ]
+    },
+    {
+      subdomain: "자기조절 상실 (Loss of Self-Regulation)",
+      questions: [
+        "긴장하면 평소의 실력을 발휘하지 못한다.",
+        "불안할수록 문제 풀이 속도가 느려진다.",
+        "마음을 진정시키거나 생각을 정리하기 어렵다.",
+        "시험 중 머리가 하얘지면 아무 노력도 소용없다고 느낀다.",
+        "감정이 올라오면 판단력과 집중력이 동시에 떨어진다."
+      ]
+    },
+    {
+      subdomain: "완벽주의 압박 (Perfectionism Pressure)",
+      questions: [
+        "실수하면 모든 걸 망쳤다고 느낀다.",
+        "완벽하게 준비하지 않으면 불안해서 시작이 어렵다.",
+        "시험 전에 계획대로 되지 않으면 조급해진다.",
+        "틀린 문제를 보면 스스로에게 실망한다.",
+        "'이번엔 꼭 완벽해야 한다'는 생각이 강하다."
+      ]
+    }
+  ]
+};
+
+// ─── 증후군 매칭 데이터 (syndromeMap) ───────────────────────
+
+export const syndromeMatchMap = [
+  {
+    id: "fomo",
+    name: "FOMO 증후군",
+    icon: "📱",
+    description: "남들과 비교하며 뒤처질까 두려워하는 증후군",
+    relatedTests: ["A", "C-2"],
+    advice: "비교는 자연스러운 감정이에요. 하지만 그 비교가 나를 성장시키는지, 아니면 지치게 하는지 살펴보세요."
+  },
+  {
+    id: "burnout",
+    name: "번아웃 증후군",
+    icon: "🔥",
+    description: "과도한 학습으로 정서적·신체적 에너지가 고갈된 상태",
+    relatedTests: ["A-2", "B-1"],
+    advice: "지금 쉬는 것은 게으른 게 아니라, 다시 달리기 위한 준비예요."
+  },
+  {
+    id: "test-anxiety",
+    name: "시험불안 증후군",
+    icon: "📝",
+    description: "시험 상황에서 과도한 긴장과 불안을 느끼는 증후군",
+    relatedTests: ["E-1", "E-3"],
+    advice: "불안은 시험에 대한 당신의 진심을 보여주는 거예요. 적절한 긴장은 오히려 도움이 됩니다."
+  },
+  {
+    id: "perfectionism",
+    name: "완벽주의 증후군",
+    icon: "✨",
+    description: "실수를 용납하지 못하고 모든 것을 완벽하게 해야 한다는 압박",
+    relatedTests: ["A-1", "C-4"],
+    advice: "완벽하지 않아도 괜찮아요. 완벽을 향해 가는 과정 자체가 성장입니다."
+  },
+  {
+    id: "compulsive-study",
+    name: "강박적 공부 증후군",
+    icon: "📚",
+    description: "공부를 멈추면 불안해지고 쉬는 것에 죄책감을 느끼는 상태",
+    relatedTests: ["B", "A-6"],
+    advice: "공부는 양이 아니라 질이에요. 전략적으로 쉬는 것도 공부의 일부입니다."
+  }
+];
+
+// ─── 카테고리 데이터 (categories) ───────────────────────────
+
+export const categoryFilters = [
+  { id: "all", label: "전체" },
+  { id: "A", label: "A: 비교불안·SNS 의존" },
+  { id: "B", label: "B: 번아웃·분노·소진" },
+  { id: "C", label: "C: 긴장·무대공포·수면" },
+  { id: "D", label: "D: 자기효능감·미루기·사회불안" },
+  { id: "E", label: "E: 시험불안·집중력·정서" }
+];
+
+// ─── 위험도 판정 함수 (getRiskLevel) ────────────────────────
+
+export function getRiskLevel(totalScore: number) {
+  if (totalScore <= 40) return { level: "양호", color: "#10B981", bgColor: "#ECFDF5", description: "현재 심리 상태가 안정적입니다. 꾸준히 관리해주세요." };
+  if (totalScore <= 60) return { level: "주의 필요", color: "#F59E0B", bgColor: "#FFFBEB", description: "약간의 스트레스 징후가 있습니다. 자기 관리에 신경 써주세요." };
+  if (totalScore <= 80) return { level: "관리 필요", color: "#F97316", bgColor: "#FFF7ED", description: "스트레스 수준이 높습니다. AI 코칭이나 전문가 상담을 권합니다." };
+  return { level: "전문 상담 권고", color: "#EF4444", bgColor: "#FEF2F2", description: "전문적인 도움이 필요한 수준입니다. 상담 전문가와 이야기해보세요." };
+}
