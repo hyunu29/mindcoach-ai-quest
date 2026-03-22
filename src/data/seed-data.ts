@@ -1269,3 +1269,169 @@ export function getRiskLevel(totalScore: number) {
   if (totalScore <= 80) return { level: "관리 필요", color: "#F97316", bgColor: "#FFF7ED", description: "스트레스 수준이 높습니다. AI 코칭이나 전문가 상담을 권합니다." };
   return { level: "전문 상담 권고", color: "#EF4444", bgColor: "#FEF2F2", description: "전문적인 도움이 필요한 수준입니다. 상담 전문가와 이야기해보세요." };
 }
+
+// ─── 위험 신호 키워드 (구조화) ──────────────────────────────
+
+export const crisisKeywordsStructured = {
+  type1_selfDeprecation: {
+    label: "자기비하",
+    severity: "high" as const,
+    keywords: ["제가 없으면", "태어나지 말았어야", "짐 덩어리", "사라지면", "관심 없잖아요"]
+  },
+  type2_despair: {
+    label: "절망감",
+    severity: "high" as const,
+    keywords: ["눈 뜨는게 무서워", "어차피 안 될", "끝이 안 보이는", "망한 것 같아", "버틸 힘이"]
+  },
+  type3_deathHint: {
+    label: "죽음 암시",
+    severity: "critical" as const,
+    keywords: ["죽으면 편해", "안 아픈 방법", "영원히 깨지 않았으면", "멀리 떠났다고", "용기가 필요"]
+  },
+  type4_farewell: {
+    label: "작별 인사",
+    severity: "critical" as const,
+    keywords: ["그동안 감사했습니다", "마지막으로 인사", "다 끝낼 때가", "물건들 처분"]
+  },
+  type5_isolation: {
+    label: "고립·도움 요청",
+    severity: "high" as const,
+    keywords: ["이해 못해요", "도망치고 싶어", "터질 것 같아요", "영원히요", "숨이 안 쉬어져"]
+  }
+};
+
+// ─── 위험 신호 감지 함수 ────────────────────────────────────
+
+export function detectCrisisSignal(text: string): { detected: boolean; type: string; severity: string; keyword: string } | null {
+  const normalizedText = text.replace(/\s/g, "");
+  for (const [, typeData] of Object.entries(crisisKeywordsStructured)) {
+    for (const keyword of typeData.keywords) {
+      const normalizedKeyword = keyword.replace(/\s/g, "");
+      if (normalizedText.includes(normalizedKeyword)) {
+        return { detected: true, type: typeData.label, severity: typeData.severity, keyword };
+      }
+    }
+  }
+  for (const ck of crisisKeywords) {
+    const nk = ck.keyword.replace(/\s/g, "");
+    if (normalizedText.includes(nk)) {
+      return { detected: true, type: "위험 신호", severity: ck.severity, keyword: ck.keyword };
+    }
+  }
+  return null;
+}
+
+// ─── 샘플 코칭 대화 시나리오 ────────────────────────────────
+
+export interface CoachingScenarioMessage {
+  role: "ai";
+  content: string;
+  trigger?: "any";
+  tip?: {
+    title: string;
+    description: string;
+  };
+}
+
+export const coachingScenarios: Record<string, CoachingScenarioMessage[]> = {
+  "burnout": [
+    {
+      role: "ai",
+      content: "안녕하세요! 마인드코치 AI입니다. 😊 최근 검사 결과를 보니 학업 소진(번아웃)에 해당하는 부분이 있네요. 요즘 공부하면서 가장 힘든 점이 뭔가요?"
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "그렇군요... 매일 열심히 하는데 지치는 느낌이 드는 건 정말 힘든 일이에요. 그 감정은 자연스러운 거예요. 혹시 최근에 쉬는 시간에도 공부 생각이 떠나지 않나요?"
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "번아웃 상태에서 가장 중요한 건 '전략적 휴식'이에요. 무조건 더 공부하는 게 아니라, 회복의 시간을 확보하는 거죠.",
+      tip: {
+        title: "🔋 에너지 충전 공식",
+        description: "50분 공부 → 10분 완전한 쉼 (스마트폰 NO, 창밖 보기·스트레칭·물 마시기). 하루 3번 이상 이 루틴을 지켜보세요."
+      }
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "오늘부터 작은 실천 하나 시작해볼까요? 🌟\n\n**이번 주 미션**: 매일 잠들기 전 '오늘 잘한 것 1가지'를 적어보세요. 아무리 작은 것도 괜찮아요. '문제 1개 풀었다', '일찍 일어났다' 같은 것도요.\n\n당신은 이미 충분히 열심히 하고 있어요. 쉬어가도 괜찮습니다. 💪"
+    }
+  ],
+  "test-anxiety": [
+    {
+      role: "ai",
+      content: "안녕하세요! 마인드코치 AI입니다. 😊 시험불안 검사 결과를 살펴봤어요. 시험이 다가올 때 특히 어떤 점이 가장 힘드신가요?"
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "시험 때 머리가 하얘지거나 심장이 빨리 뛰는 건 우리 몸의 자연스러운 반응이에요. 불안은 '이 시험이 중요하다'는 신호이기도 하거든요. 시험 전날이나 당일 아침에 특히 더 그런가요?"
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "시험 불안을 다스리는 가장 효과적인 방법 중 하나가 '호흡법'이에요.",
+      tip: {
+        title: "🌬️ 4-7-8 호흡법",
+        description: "코로 4초 들이쉬기 → 7초 멈추기 → 입으로 8초 내쉬기. 시험 직전 3회 반복하면 심박수가 안정됩니다."
+      }
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "**이번 주 미션**: 매일 잠들기 전 4-7-8 호흡법을 3회 연습해보세요. 시험 당일에 자연스럽게 할 수 있도록요.\n\n그리고 기억하세요 — 시험 하나가 당신의 가치를 결정하지 않아요. 긴장되는 만큼 준비한 당신을 믿어보세요. ✨"
+    }
+  ],
+  "fomo": [
+    {
+      role: "ai",
+      content: "안녕하세요! 마인드코치 AI입니다. 😊 검사 결과를 보니 SNS 비교불안이 높은 편이네요. 요즘 SNS를 보면서 어떤 생각이 드시나요?"
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "SNS에서 다른 사람들의 성과를 보면 불안해지는 건 아주 자연스러운 감정이에요. SNS는 '가장 잘 나온 순간만' 보여주는 하이라이트 모음이거든요."
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "비교 불안을 다스리는 좋은 방법이 있어요.",
+      tip: {
+        title: "📝 3-2-1 리프레이밍 기법",
+        description: "비교 생각이 들 때: ① 내가 잘한 것 3가지 적기 ② 지금 감사한 것 2가지 떠올리기 ③ 내일 하고 싶은 것 1가지 정하기"
+      }
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "**이번 주 미션**: 하루에 한 번, SNS 대신 '성장 일지'를 써보세요. 오늘 내가 배운 것, 해낸 것을 3줄만 적어보세요.\n\n남과 비교하는 대신 어제의 나와 비교하면, 분명 성장하고 있는 자신을 발견할 거예요. 💜"
+    }
+  ],
+  "default": [
+    {
+      role: "ai",
+      content: "안녕하세요! 마인드코치 AI입니다. 😊 어떤 이야기든 편하게 말씀해 주세요. 요즘 공부하면서 마음이 어떠세요?"
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "그런 마음이 드는 건 자연스러운 거예요. 수험 생활은 정말 쉽지 않거든요. 조금 더 자세히 이야기해 줄 수 있나요?"
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "이해해요. 지금 느끼는 감정을 인식하고 말로 표현하는 것 자체가 정말 중요한 첫 걸음이에요.",
+      tip: {
+        title: "💡 감정 인식 팁",
+        description: "하루에 한 번, '지금 내 감정은 ___이다'라고 스스로에게 말해보세요. 감정에 이름을 붙이면 그 감정을 다루기가 훨씬 쉬워집니다."
+      }
+    },
+    {
+      trigger: "any",
+      role: "ai",
+      content: "오늘 대화해 주셔서 감사해요. 😊 심리검사를 통해 더 구체적으로 자신을 알아볼 수도 있어요. 감정 트래킹으로 매일의 마음을 기록해보는 것도 추천드려요!\n\n언제든 다시 찾아와 주세요. 당신의 마음을 응원합니다. 💜"
+    }
+  ]
+};
