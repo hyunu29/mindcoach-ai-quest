@@ -97,6 +97,7 @@ export type Database = {
           emoji: string
           id: string
           memo: string | null
+          recorded_date: string
           score: number
           user_id: string
         }
@@ -105,6 +106,7 @@ export type Database = {
           emoji: string
           id?: string
           memo?: string | null
+          recorded_date?: string
           score: number
           user_id: string
         }
@@ -113,6 +115,7 @@ export type Database = {
           emoji?: string
           id?: string
           memo?: string | null
+          recorded_date?: string
           score?: number
           user_id?: string
         }
