@@ -79,10 +79,33 @@ export default function EmotionPage() {
 
   const hasTodayRecord = emotionData[todayKey] !== undefined;
 
-  /* Save emotion */
-  const handleSave = () => {
+  /* Save emotion via upsert */
+  const handleSave = async () => {
     if (selectedEmoji === null) return;
     const opt = emotionOptions[selectedEmoji];
+    const recordedDate = todayKey; // YYYY-MM-DD
+
+    // Try upsert to Supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from('emotions')
+        .upsert(
+          {
+            user_id: user.id,
+            emoji: opt.emoji,
+            score: opt.score,
+            memo: memo || null,
+            recorded_date: recordedDate,
+          },
+          { onConflict: 'user_id,recorded_date' }
+        );
+      if (error) {
+        console.error('감정 저장 오류:', error);
+      }
+    }
+
+    // Update local state
     setEmotionData((prev) => ({
       ...prev,
       [todayKey]: { emoji: opt.emoji, score: opt.score, memo },
