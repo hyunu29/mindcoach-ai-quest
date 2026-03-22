@@ -2,14 +2,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-
-interface Question {
-  id: number;
-  text: string;
-}
+import { testList, testQuestions, getRiskLevel, syndromeMatchMap } from "@/data/seed-data";
 
 const likertOptions = [
   { score: 1, label: "전혀 그렇지 않다" },
@@ -22,37 +18,31 @@ const likertOptions = [
 export default function TestTakingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [testName, setTestName] = useState("");
-  const [subAreas, setSubAreas] = useState<string[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
+
+  const test = testList.find((t) => t.id === id);
+  const questionGroups = id ? testQuestions[id] : undefined;
+
+  // Flatten questions
+  const allQuestions = questionGroups
+    ? questionGroups.flatMap((g, gi) =>
+        g.questions.map((q, qi) => ({
+          text: q,
+          subdomain: g.subdomain,
+          index: gi * 5 + qi,
+          isReversed: g.subdomain.includes("[역문항]"),
+        }))
+      )
+    : [];
+
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(180); // 3 min
+  const [timeLeft, setTimeLeft] = useState(180);
   const [timerExpired, setTimerExpired] = useState(false);
-
-  useEffect(() => {
-    const fetchTest = async () => {
-      if (!id) return;
-      const { data, error } = await supabase
-        .from("tests")
-        .select("name, questions, sub_areas")
-        .eq("id", id)
-        .single();
-
-      if (!error && data) {
-        setTestName(data.name);
-        setQuestions(data.questions as unknown as Question[]);
-        setSubAreas(data.sub_areas as unknown as string[]);
-      }
-      setLoading(false);
-    };
-    fetchTest();
-  }, [id]);
+  const startTimeRef = useRef(Date.now());
 
   // Timer
   useEffect(() => {
-    if (timerExpired || loading) return;
+    if (timerExpired) return;
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -63,7 +53,7 @@ export default function TestTakingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [timerExpired, loading]);
+  }, [timerExpired]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -75,50 +65,66 @@ export default function TestTakingPage() {
     setAnswers((prev) => ({ ...prev, [current]: score }));
   };
 
-  const progress = questions.length > 0 ? ((current + 1) / questions.length) * 100 : 0;
-  const isLastQuestion = current === questions.length - 1;
-  const allAnswered = questions.length > 0 && Object.keys(answers).length === questions.length;
+  const progress = allQuestions.length > 0 ? ((current + 1) / allQuestions.length) * 100 : 0;
+  const isLastQuestion = current === allQuestions.length - 1;
+  const allAnswered = allQuestions.length > 0 && Object.keys(answers).length === allQuestions.length;
+
+  // Current subdomain label
+  const currentSubdomain = allQuestions[current]?.subdomain || "";
 
   const handleSubmit = useCallback(async () => {
-    if (!id) return;
+    if (!id || !questionGroups || !test) return;
 
-    // Calculate sub-area scores (5 questions per sub-area)
-    const questionsPerArea = Math.ceil(questions.length / subAreas.length);
-    const scores: Record<string, number> = {};
-    subAreas.forEach((area, areaIndex) => {
-      let areaScore = 0;
-      for (let i = 0; i < questionsPerArea; i++) {
-        const qIndex = areaIndex * questionsPerArea + i;
-        if (answers[qIndex]) areaScore += answers[qIndex];
+    const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
+
+    // Calculate subdomain scores
+    const subdomainScores: Record<string, number> = {};
+    let qIndex = 0;
+    for (const group of questionGroups) {
+      let groupScore = 0;
+      for (let i = 0; i < group.questions.length; i++) {
+        const raw = answers[qIndex] || 3;
+        const isReversed = group.subdomain.includes("[역문항]");
+        groupScore += isReversed ? (6 - raw) : raw;
+        qIndex++;
       }
-      scores[area] = areaScore;
-    });
+      subdomainScores[group.subdomain] = groupScore;
+    }
 
-    const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+    const totalScore = Object.values(subdomainScores).reduce((a, b) => a + b, 0);
+    const risk = getRiskLevel(totalScore);
+    const matchedSyndromes = syndromeMatchMap
+      .filter((s) => s.relatedTests.includes(id))
+      .map((s) => s.id);
 
-    // Try to save (will fail if not logged in due to RLS, but we still navigate)
+    const answersArray = Array.from({ length: allQuestions.length }, (_, i) => answers[i] || 0);
+
+    // Try to save to DB
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase.from("test_results").insert({
         user_id: user.id,
         test_id: id,
-        answers: Object.entries(answers).map(([q, a]) => ({ question: Number(q), answer: a })),
-        scores,
+        answers: answersArray as any,
+        scores: subdomainScores as any,
         total_score: totalScore,
       });
     }
 
-    // Navigate with state for results page
     navigate(`/results/${id}`, {
-      state: { scores, totalScore, testName, subAreas },
+      state: {
+        subdomainScores,
+        totalScore,
+        testName: test.name,
+        subdomains: test.subdomains,
+        matchedSyndromes,
+        durationSeconds,
+        answersArray,
+      },
     });
-  }, [id, answers, questions, subAreas, testName, navigate]);
+  }, [id, answers, questionGroups, test, allQuestions.length, navigate]);
 
-  if (loading) {
-    return <div className="h-64 rounded-2xl bg-muted animate-pulse" />;
-  }
-
-  if (questions.length === 0) {
+  if (!test || !questionGroups) {
     return (
       <div className="text-center py-12 text-muted-foreground text-sm">
         검사 데이터를 불러올 수 없습니다.
@@ -130,7 +136,7 @@ export default function TestTakingPage() {
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold truncate pr-4">{testName}</h1>
+        <h1 className="text-lg font-bold truncate pr-4">{test.name}</h1>
         <div className={`flex items-center gap-1.5 text-sm font-mono font-semibold shrink-0 ${
           timerExpired ? "text-destructive" : timeLeft <= 30 ? "text-warning" : "text-muted-foreground"
         }`}>
@@ -142,7 +148,7 @@ export default function TestTakingPage() {
       {/* Progress */}
       <div>
         <div className="flex items-center justify-between mb-1.5 text-xs text-muted-foreground">
-          <span>{current + 1} / {questions.length}</span>
+          <span>{current + 1} / {allQuestions.length}</span>
           <span>{Math.round(progress)}%</span>
         </div>
         <Progress value={progress} className="h-2 rounded-full" />
@@ -150,8 +156,13 @@ export default function TestTakingPage() {
 
       {/* Question */}
       <Card className="p-6 rounded-2xl border-border/50 shadow-sm">
+        {/* Subdomain label */}
+        <p className="text-xs text-muted-foreground mb-3 font-medium">
+          {currentSubdomain}
+        </p>
+
         <p className="text-base font-medium leading-relaxed mb-6">
-          Q{current + 1}. {questions[current].text}
+          Q{current + 1}. {allQuestions[current].text}
         </p>
 
         {/* Likert scale */}
@@ -162,9 +173,9 @@ export default function TestTakingPage() {
               <button
                 key={opt.score}
                 onClick={() => handleSelect(opt.score)}
-                className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl border text-xs transition-all duration-200 active:scale-95 ${
+                className={`flex-1 flex flex-col items-center gap-1.5 py-3 md:py-3 px-1 rounded-xl border text-xs transition-all duration-200 active:scale-95 ${
                   isSelected
-                    ? "gradient-primary text-primary-foreground border-transparent shadow-md"
+                    ? "gradient-primary text-primary-foreground border-transparent shadow-md scale-[1.02]"
                     : "border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-primary/5"
                 }`}
               >
