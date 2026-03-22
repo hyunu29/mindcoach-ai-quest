@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      coaching_sessions: {
+        Row: {
+          created_at: string
+          crisis_detected: boolean
+          crisis_type: string | null
+          id: string
+          messages: Json
+          related_syndrome: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          crisis_detected?: boolean
+          crisis_type?: string | null
+          id?: string
+          messages?: Json
+          related_syndrome?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          crisis_detected?: boolean
+          crisis_type?: string | null
+          id?: string
+          messages?: Json
+          related_syndrome?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crisis_logs: {
+        Row: {
+          created_at: string
+          crisis_type: string
+          detected_keyword: string
+          id: string
+          session_id: string | null
+          severity: string
+          user_id: string
+          user_message: string
+        }
+        Insert: {
+          created_at?: string
+          crisis_type: string
+          detected_keyword: string
+          id?: string
+          session_id?: string | null
+          severity: string
+          user_id: string
+          user_message: string
+        }
+        Update: {
+          created_at?: string
+          crisis_type?: string
+          detected_keyword?: string
+          id?: string
+          session_id?: string | null
+          severity?: string
+          user_id?: string
+          user_message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crisis_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emotions: {
         Row: {
           created_at: string
