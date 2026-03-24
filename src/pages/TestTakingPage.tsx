@@ -65,7 +65,7 @@ export default function TestTakingPage() {
         setTest({
           ...data,
           subdomains: (data.subdomains as string[]) || [],
-          questions: (data.questions as QuestionItem[]) || [],
+          questions: (data.questions as unknown as QuestionItem[]) || [],
         });
         setTimeLeft((data.duration_minutes || 3) * 60);
       }
