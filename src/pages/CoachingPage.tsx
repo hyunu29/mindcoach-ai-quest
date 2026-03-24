@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -6,35 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Send, Plus, MessageSquare, Phone, Menu, X, Brain, MessageCircleHeart, Loader2,
 } from "lucide-react";
-import {
-  detectCrisisSignal, coachingScenarios, type CoachingScenarioMessage,
-} from "@/data/seed-data";
+import { detectCrisisSignal, syndromes } from "@/data/seed-data";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-
-/* ─── Types ──────────────────────────────────────── */
-
-interface TipData { title: string; description: string; }
-
-interface ChatMessage {
-  role: "user" | "ai";
-  content: string;
-  tip?: TipData;
-  timestamp?: string;
-}
-
-interface DbSession {
-  id: string;
-  related_syndrome: string | null;
-  messages: ChatMessage[];
-  created_at: string;
-  updated_at: string;
-}
-
-/* ─── Component ──────────────────────────────────── */
+import { streamCoachingChat } from "@/lib/coaching-stream";
+import type { ChatMessage, DbSession } from "@/lib/coaching-types";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
@@ -54,24 +33,18 @@ export default function CoachingPage() {
   const active = sessions.find((s) => s.id === activeId);
   const messages = active?.messages || [];
 
-  // Determine scenario key from syndrome
-  const getScenarioKey = (syndrome: string | null): string => {
-    if (!syndrome) return "default";
-    const map: Record<string, string> = {
-      "FOMO 증후군": "fomo",
-      "번아웃 증후군": "burnout",
-      "시험불안 증후군": "test-anxiety",
-      "학업 소진 증후군": "burnout",
-      "완벽주의 루틴 강박 증후군": "burnout",
-      "강박적 공부 증후군": "burnout",
-      "만성피로 증후군": "burnout",
-      "분노 조절 장애": "burnout",
+  // Get syndrome context for AI
+  const getSyndromeContext = (syndromeName: string | null) => {
+    if (!syndromeName) return null;
+    const syndrome = syndromes.find((s) => s.name === syndromeName);
+    if (!syndrome) return null;
+    return {
+      name: syndrome.name,
+      description: syndrome.description,
+      causes: syndrome.causes,
+      symptoms: syndrome.symptoms,
+      solutions: syndrome.solutions,
     };
-    return map[syndrome] || "default";
-  };
-
-  const getTurnCount = (msgs: ChatMessage[]): number => {
-    return msgs.filter((m) => m.role === "user").length;
   };
 
   // Auto-scroll
@@ -104,16 +77,12 @@ export default function CoachingPage() {
 
       setSessions(loaded);
 
-      // Check URL params for new session from test results
       const syndrome = searchParams.get("syndrome");
       const resultId = searchParams.get("resultId");
       if (syndrome) {
-        // Create new session for this syndrome
-        const scenarioKey = getScenarioKey(syndrome);
-        const scenario = coachingScenarios[scenarioKey] || coachingScenarios["default"];
         const firstMsg: ChatMessage = {
           role: "ai",
-          content: scenario[0].content,
+          content: "",
           timestamp: new Date().toISOString(),
         };
 
@@ -138,6 +107,9 @@ export default function CoachingPage() {
           };
           setSessions((prev) => [ns, ...prev]);
           setActiveId(newSession.id);
+
+          // Generate first AI message via streaming
+          generateFirstMessage(newSession.id, syndrome, []);
         }
       } else if (loaded.length > 0) {
         setActiveId(loaded[0].id);
@@ -147,6 +119,45 @@ export default function CoachingPage() {
     };
     init();
   }, []);
+
+  const generateFirstMessage = async (sessionId: string, syndrome: string | null, existingMsgs: ChatMessage[]) => {
+    setIsTyping(true);
+    let aiContent = "";
+
+    const syndromeCtx = getSyndromeContext(syndrome);
+
+    await streamCoachingChat({
+      messages: existingMsgs,
+      syndromeContext: syndromeCtx,
+      onDelta: (chunk) => {
+        aiContent += chunk;
+        const updatedMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
+        setSessions((prev) =>
+          prev.map((s) => s.id === sessionId ? { ...s, messages: [updatedMsg] } : s)
+        );
+      },
+      onDone: async () => {
+        setIsTyping(false);
+        const finalMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
+        await supabase
+          .from("coaching_sessions")
+          .update({ messages: [finalMsg] as any, updated_at: new Date().toISOString() })
+          .eq("id", sessionId);
+      },
+      onError: (err) => {
+        setIsTyping(false);
+        const fallbackMsg: ChatMessage = {
+          role: "ai",
+          content: "안녕하세요! 마인드코치 AI입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.",
+          timestamp: new Date().toISOString(),
+        };
+        setSessions((prev) =>
+          prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s)
+        );
+        toast({ title: "AI 연결 오류", description: err, variant: "destructive" });
+      },
+    });
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isTyping || !active || !userId) return;
@@ -171,57 +182,62 @@ export default function CoachingPage() {
       .update({ messages: updatedMsgs as any, updated_at: new Date().toISOString() })
       .eq("id", activeId);
 
-    // Find AI response
-    const scenarioKey = getScenarioKey(active.related_syndrome);
-    const scenario = coachingScenarios[scenarioKey] || coachingScenarios["default"];
-    const turnCount = getTurnCount(updatedMsgs);
-    const nextResponse: CoachingScenarioMessage | undefined = scenario[turnCount];
+    // Stream AI response
+    let aiContent = "";
+    const syndromeCtx = getSyndromeContext(active.related_syndrome);
 
-    setTimeout(async () => {
-      const aiMessages: ChatMessage[] = [];
+    // For crisis, prepend a crisis context
+    let testResultSummary: string | null = null;
+    if (crisis) {
+      testResultSummary = `⚠️ 위험 신호 감지: ${crisis.type} (심각도: ${crisis.severity}). 사용자의 안전을 최우선으로 응답해주세요.`;
+    }
 
-      if (crisis) {
-        aiMessages.push({
+    await streamCoachingChat({
+      messages: updatedMsgs,
+      syndromeContext: syndromeCtx,
+      testResultSummary,
+      onDelta: (chunk) => {
+        aiContent += chunk;
+        const aiMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
+        setSessions((prev) =>
+          prev.map((s) => s.id === activeId ? { ...s, messages: [...updatedMsgs, aiMsg] } : s)
+        );
+      },
+      onDone: async () => {
+        setIsTyping(false);
+        const aiMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
+        const finalMsgs = [...updatedMsgs, aiMsg];
+
+        setSessions((prev) => prev.map((s) => s.id === activeId ? { ...s, messages: finalMsgs } : s));
+
+        await supabase
+          .from("coaching_sessions")
+          .update({ messages: finalMsgs as any, updated_at: new Date().toISOString() })
+          .eq("id", activeId);
+      },
+      onError: (err) => {
+        setIsTyping(false);
+        const fallbackMsg: ChatMessage = {
           role: "ai",
-          content: crisis.severity === "critical"
-            ? "지금 많이 힘드시죠. 당신의 마음이 걱정됩니다. 혼자 감당하지 않아도 됩니다. 지금 바로 전문 상담사와 이야기해보시는 건 어떨까요? 자살예방상담전화 1393은 24시간 운영됩니다. 💜"
-            : "많이 힘든 시간을 보내고 있군요. 이런 마음이 드는 건 자연스러운 거예요. 하지만 혹시 더 힘든 생각이 든다면, 전문가와 이야기해보는 것을 권합니다. 💜",
+          content: "죄송합니다, 일시적으로 응답을 생성하지 못했어요. 다시 시도해 주세요. 🙏",
           timestamp: new Date().toISOString(),
-        });
-      } else if (nextResponse) {
-        const msg: ChatMessage = { role: "ai", content: nextResponse.content, timestamp: new Date().toISOString() };
-        if (nextResponse.tip) msg.tip = nextResponse.tip;
-        aiMessages.push(msg);
-      } else {
-        aiMessages.push({
-          role: "ai",
-          content: "오늘 대화해 주셔서 감사해요. 😊 추가로 궁금한 점이 있으면 언제든 말씀해 주세요.",
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      const finalMsgs = [...updatedMsgs, ...aiMessages];
-      setSessions((prev) => prev.map((s) => s.id === activeId ? { ...s, messages: finalMsgs } : s));
-      setIsTyping(false);
-
-      await supabase
-        .from("coaching_sessions")
-        .update({ messages: finalMsgs as any, updated_at: new Date().toISOString() })
-        .eq("id", activeId);
-    }, 1500);
+        };
+        const finalMsgs = [...updatedMsgs, fallbackMsg];
+        setSessions((prev) => prev.map((s) => s.id === activeId ? { ...s, messages: finalMsgs } : s));
+        toast({ title: "AI 응답 오류", description: err, variant: "destructive" });
+      },
+    });
   };
 
   const handleNewConversation = async () => {
     if (!userId) return;
-    const scenario = coachingScenarios["default"];
-    const firstMsg: ChatMessage = { role: "ai", content: scenario[0].content, timestamp: new Date().toISOString() };
 
     const { data, error } = await supabase
       .from("coaching_sessions")
       .insert({
         user_id: userId,
         related_syndrome: null,
-        messages: [firstMsg] as any,
+        messages: [] as any,
       } as any)
       .select()
       .single();
@@ -234,7 +250,7 @@ export default function CoachingPage() {
     const ns: DbSession = {
       id: data.id,
       related_syndrome: null,
-      messages: [firstMsg],
+      messages: [],
       created_at: data.created_at,
       updated_at: data.updated_at,
     };
@@ -243,6 +259,9 @@ export default function CoachingPage() {
     setShowCrisisBanner(false);
     setCrisisInfo(null);
     setSidebarOpen(false);
+
+    // Generate first AI message
+    generateFirstMessage(data.id, null, []);
   };
 
   const formatDate = (dateStr: string) => {
@@ -382,7 +401,7 @@ export default function CoachingPage() {
               )}
             </div>
           ))}
-          {isTyping && (
+          {isTyping && messages[messages.length - 1]?.role !== "ai" && (
             <div className="flex gap-2.5">
               <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center shrink-0 shadow-sm"><Brain className="w-4 h-4 text-primary-foreground" /></div>
               <div className="bg-card border border-primary/15 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
