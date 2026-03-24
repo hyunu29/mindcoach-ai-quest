@@ -1,0 +1,1 @@
+UPDATE tests SET is_recommended = true WHERE id IN ('A', 'B', 'E-3');
