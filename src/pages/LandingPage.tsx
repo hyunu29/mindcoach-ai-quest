@@ -1,12 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import TrustSection from "@/components/landing/TrustSection";
 import CtaSection from "@/components/landing/CtaSection";
 import { Sparkles } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  if (!loading && user) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen bg-background">
