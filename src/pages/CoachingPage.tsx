@@ -206,7 +206,7 @@ export default function CoachingPage() {
 
       await supabase
         .from("coaching_sessions")
-        .update({ messages: finalMsgs as unknown as Record<string, unknown>[], updated_at: new Date().toISOString() })
+        .update({ messages: finalMsgs as any, updated_at: new Date().toISOString() })
         .eq("id", activeId);
     }, 1500);
   };
