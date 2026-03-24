@@ -17,76 +17,37 @@ export type Database = {
       coaching_sessions: {
         Row: {
           created_at: string
-          crisis_detected: boolean
-          crisis_type: string | null
           id: string
           messages: Json
           related_syndrome: string | null
-          title: string
+          related_test_result_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          crisis_detected?: boolean
-          crisis_type?: string | null
           id?: string
           messages?: Json
           related_syndrome?: string | null
-          title?: string
+          related_test_result_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          crisis_detected?: boolean
-          crisis_type?: string | null
           id?: string
           messages?: Json
           related_syndrome?: string | null
-          title?: string
+          related_test_result_id?: string | null
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      crisis_logs: {
-        Row: {
-          created_at: string
-          crisis_type: string
-          detected_keyword: string
-          id: string
-          session_id: string | null
-          severity: string
-          user_id: string
-          user_message: string
-        }
-        Insert: {
-          created_at?: string
-          crisis_type: string
-          detected_keyword: string
-          id?: string
-          session_id?: string | null
-          severity: string
-          user_id: string
-          user_message: string
-        }
-        Update: {
-          created_at?: string
-          crisis_type?: string
-          detected_keyword?: string
-          id?: string
-          session_id?: string | null
-          severity?: string
-          user_id?: string
-          user_message?: string
         }
         Relationships: [
           {
-            foreignKeyName: "crisis_logs_session_id_fkey"
-            columns: ["session_id"]
+            foreignKeyName: "coaching_sessions_related_test_result_id_fkey"
+            columns: ["related_test_result_id"]
             isOneToOne: false
-            referencedRelation: "coaching_sessions"
+            referencedRelation: "test_results"
             referencedColumns: ["id"]
           },
         ]
@@ -97,7 +58,6 @@ export type Database = {
           emoji: string
           id: string
           memo: string | null
-          recorded_date: string
           score: number
           user_id: string
         }
@@ -106,7 +66,6 @@ export type Database = {
           emoji: string
           id?: string
           memo?: string | null
-          recorded_date?: string
           score: number
           user_id: string
         }
@@ -115,9 +74,35 @@ export type Database = {
           emoji?: string
           id?: string
           memo?: string | null
-          recorded_date?: string
           score?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          grade: string | null
+          id: string
+          nickname: string | null
+          school_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grade?: string | null
+          id: string
+          nickname?: string | null
+          school_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          nickname?: string | null
+          school_type?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -125,11 +110,11 @@ export type Database = {
         Row: {
           answers: Json
           created_at: string
-          duration_seconds: number | null
           id: string
-          matched_syndromes: Json | null
-          risk_level: string | null
-          scores: Json
+          matched_syndrome: string | null
+          risk_label: string
+          risk_level: string
+          subdomain_scores: Json
           test_id: string
           total_score: number
           user_id: string
@@ -137,11 +122,11 @@ export type Database = {
         Insert: {
           answers?: Json
           created_at?: string
-          duration_seconds?: number | null
           id?: string
-          matched_syndromes?: Json | null
-          risk_level?: string | null
-          scores?: Json
+          matched_syndrome?: string | null
+          risk_label?: string
+          risk_level?: string
+          subdomain_scores?: Json
           test_id: string
           total_score?: number
           user_id: string
@@ -149,16 +134,24 @@ export type Database = {
         Update: {
           answers?: Json
           created_at?: string
-          duration_seconds?: number | null
           id?: string
-          matched_syndromes?: Json | null
-          risk_level?: string | null
-          scores?: Json
+          matched_syndrome?: string | null
+          risk_label?: string
+          risk_level?: string
+          subdomain_scores?: Json
           test_id?: string
           total_score?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "test_results_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tests: {
         Row: {
@@ -167,10 +160,12 @@ export type Database = {
           description: string
           duration_minutes: number
           id: string
+          is_coming_soon: boolean
+          is_recommended: boolean
           name: string
           question_count: number
           questions: Json
-          recommended: boolean
+          related_syndrome: string
           subdomains: Json
         }
         Insert: {
@@ -179,10 +174,12 @@ export type Database = {
           description: string
           duration_minutes?: number
           id: string
+          is_coming_soon?: boolean
+          is_recommended?: boolean
           name: string
           question_count?: number
           questions?: Json
-          recommended?: boolean
+          related_syndrome?: string
           subdomains?: Json
         }
         Update: {
@@ -191,10 +188,12 @@ export type Database = {
           description?: string
           duration_minutes?: number
           id?: string
+          is_coming_soon?: boolean
+          is_recommended?: boolean
           name?: string
           question_count?: number
           questions?: Json
-          recommended?: boolean
+          related_syndrome?: string
           subdomains?: Json
         }
         Relationships: []
