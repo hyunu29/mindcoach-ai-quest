@@ -97,7 +97,7 @@ export default function CoachingPage() {
       const loaded = (data || []).map((row) => ({
         id: row.id,
         related_syndrome: row.related_syndrome,
-        messages: (Array.isArray(row.messages) ? row.messages : []) as ChatMessage[],
+        messages: (Array.isArray(row.messages) ? row.messages : []) as unknown as ChatMessage[],
         created_at: row.created_at,
         updated_at: row.updated_at,
       }));
