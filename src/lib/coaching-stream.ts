@@ -1,4 +1,4 @@
-import { ChatMessage } from "./types";
+import { ChatMessage } from "./coaching-types";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-coaching`;
 
