@@ -168,7 +168,7 @@ export default function CoachingPage() {
     // Save user message
     await supabase
       .from("coaching_sessions")
-      .update({ messages: updatedMsgs as unknown as Record<string, unknown>[], updated_at: new Date().toISOString() })
+      .update({ messages: updatedMsgs as any, updated_at: new Date().toISOString() })
       .eq("id", activeId);
 
     // Find AI response
