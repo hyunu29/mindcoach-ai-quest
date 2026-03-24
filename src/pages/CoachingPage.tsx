@@ -221,8 +221,8 @@ export default function CoachingPage() {
       .insert({
         user_id: userId,
         related_syndrome: null,
-        messages: [firstMsg] as unknown as Record<string, unknown>[],
-      })
+        messages: [firstMsg] as any,
+      } as any)
       .select()
       .single();
 
