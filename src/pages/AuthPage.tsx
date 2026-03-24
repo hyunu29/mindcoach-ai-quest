@@ -2,17 +2,45 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Sparkles, Loader2 } from "lucide-react";
+import { useNavigate, Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, loading: authLoading, signUp, signIn } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (authLoading) return null;
+  if (user) return <Navigate to="/dashboard" replace />;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Supabase auth
-    navigate("/dashboard");
+    if (!email || !password) {
+      toast.error("이메일과 비밀번호를 입력해주세요.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("비밀번호는 최소 6자리여야 합니다.");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = isLogin
+      ? await signIn(email, password)
+      : await signUp(email, password);
+
+    if (error) {
+      toast.error(error);
+      setLoading(false);
+    } else {
+      toast.success(isLogin ? "로그인되었습니다!" : "가입이 완료되었습니다!");
+      navigate("/dashboard");
+    }
   };
 
   return (
@@ -32,21 +60,30 @@ export default function AuthPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="name">이름</Label>
-              <Input id="name" placeholder="홍길동" className="rounded-xl" />
-            </div>
-          )}
           <div className="space-y-2">
             <Label htmlFor="email">이메일</Label>
-            <Input id="email" type="email" placeholder="email@example.com" className="rounded-xl" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="email@example.com"
+              className="rounded-xl"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">비밀번호</Label>
-            <Input id="password" type="password" placeholder="••••••••" className="rounded-xl" />
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              className="rounded-xl"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
-          <Button type="submit" variant="hero" size="lg" className="w-full">
+          <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             {isLogin ? "로그인" : "회원가입"}
           </Button>
         </form>
