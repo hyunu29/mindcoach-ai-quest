@@ -4,8 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { testList, testQuestions, getRiskLevel, syndromeMatchMap } from "@/data/seed-data";
+import { ChevronLeft, ChevronRight, Clock, ArrowLeft, Loader2 } from "lucide-react";
+import { getRiskLevel } from "@/data/seed-data";
 
 const likertOptions = [
   { score: 1, label: "전혀 그렇지 않다" },
@@ -15,34 +15,68 @@ const likertOptions = [
   { score: 5, label: "매우 그렇다" },
 ];
 
+interface QuestionItem {
+  id: number;
+  text: string;
+  subdomain: string;
+  subdomainEn: string;
+  isReversed: boolean;
+}
+
+interface TestData {
+  id: string;
+  name: string;
+  category: string;
+  related_syndrome: string;
+  description: string;
+  question_count: number;
+  duration_minutes: number;
+  is_recommended: boolean;
+  is_coming_soon: boolean;
+  subdomains: string[];
+  questions: QuestionItem[];
+}
+
 export default function TestTakingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const test = testList.find((t) => t.id === id);
-  const questionGroups = id ? testQuestions[id] : undefined;
-
-  // Flatten questions
-  const allQuestions = questionGroups
-    ? questionGroups.flatMap((g, gi) =>
-        g.questions.map((q, qi) => ({
-          text: q,
-          subdomain: g.subdomain,
-          index: gi * 5 + qi,
-          isReversed: g.subdomain.includes("[역문항]"),
-        }))
-      )
-    : [];
-
+  const [test, setTest] = useState<TestData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(180);
   const [timerExpired, setTimerExpired] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const startTimeRef = useRef(Date.now());
+
+  // Fetch test from DB
+  useEffect(() => {
+    if (!id) return;
+    const fetchTest = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("tests")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setTest({
+          ...data,
+          subdomains: (data.subdomains as string[]) || [],
+          questions: (data.questions as QuestionItem[]) || [],
+        });
+        setTimeLeft((data.duration_minutes || 3) * 60);
+      }
+      setLoading(false);
+    };
+    fetchTest();
+  }, [id]);
 
   // Timer
   useEffect(() => {
-    if (timerExpired) return;
+    if (timerExpired || loading || !test || test.is_coming_soon) return;
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -53,7 +87,7 @@ export default function TestTakingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [timerExpired]);
+  }, [timerExpired, loading, test]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -61,73 +95,110 @@ export default function TestTakingPage() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  const questions = test?.questions || [];
   const handleSelect = (score: number) => {
     setAnswers((prev) => ({ ...prev, [current]: score }));
   };
 
-  const progress = allQuestions.length > 0 ? ((current + 1) / allQuestions.length) * 100 : 0;
-  const isLastQuestion = current === allQuestions.length - 1;
-  const allAnswered = allQuestions.length > 0 && Object.keys(answers).length === allQuestions.length;
+  const progress = questions.length > 0 ? ((current + 1) / questions.length) * 100 : 0;
+  const isLastQuestion = current === questions.length - 1;
+  const allAnswered = questions.length > 0 && Object.keys(answers).length === questions.length;
 
-  // Current subdomain label
-  const currentSubdomain = allQuestions[current]?.subdomain || "";
+  const currentQuestion = questions[current];
+  const currentSubdomain = currentQuestion?.subdomain || "";
 
   const handleSubmit = useCallback(async () => {
-    if (!id || !questionGroups || !test) return;
+    if (!id || !test || questions.length === 0 || submitting) return;
+    setSubmitting(true);
 
-    const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
-
-    // Calculate subdomain scores
-    const subdomainScores: Record<string, number> = {};
-    let qIndex = 0;
-    for (const group of questionGroups) {
-      let groupScore = 0;
-      for (let i = 0; i < group.questions.length; i++) {
-        const raw = answers[qIndex] || 3;
-        const isReversed = group.subdomain.includes("[역문항]");
-        groupScore += isReversed ? (6 - raw) : raw;
-        qIndex++;
+    // Build subdomain scores
+    const subdomainMap: Record<string, { total: number; count: number }> = {};
+    questions.forEach((q, i) => {
+      const raw = answers[i] || 3;
+      const score = q.isReversed ? (6 - raw) : raw;
+      if (!subdomainMap[q.subdomain]) {
+        subdomainMap[q.subdomain] = { total: 0, count: 0 };
       }
-      subdomainScores[group.subdomain] = groupScore;
+      subdomainMap[q.subdomain].total += score;
+      subdomainMap[q.subdomain].count += 1;
+    });
+
+    const subdomainScores: Record<string, number> = {};
+    for (const [key, val] of Object.entries(subdomainMap)) {
+      subdomainScores[key] = val.total;
     }
 
     const totalScore = Object.values(subdomainScores).reduce((a, b) => a + b, 0);
     const risk = getRiskLevel(totalScore);
-    const matchedSyndromes = syndromeMatchMap
-      .filter((s) => s.relatedTests.includes(id))
-      .map((s) => s.id);
+    const riskLevel = totalScore <= 40 ? "safe" : totalScore <= 60 ? "caution" : totalScore <= 80 ? "warning" : "danger";
 
-    const answersArray = Array.from({ length: allQuestions.length }, (_, i) => answers[i] || 0);
+    const answersArray = questions.map((_, i) => ({
+      questionId: i + 1,
+      answer: answers[i] || 0,
+    }));
 
-    // Try to save to DB
     const { data: { user } } = await supabase.auth.getUser();
+
+    const resultPayload = {
+      test_id: id,
+      answers: answersArray as any,
+      subdomain_scores: subdomainScores as any,
+      total_score: totalScore,
+      risk_level: riskLevel,
+      risk_label: risk.level,
+      matched_syndrome: test.related_syndrome || null,
+    };
+
     if (user) {
-      await supabase.from("test_results").insert({
-        user_id: user.id,
-        test_id: id,
-        answers: answersArray as any,
-        scores: subdomainScores as any,
-        total_score: totalScore,
-      });
+      const { data: insertedResult, error } = await supabase
+        .from("test_results")
+        .insert({ ...resultPayload, user_id: user.id })
+        .select("id")
+        .single();
+
+      if (!error && insertedResult) {
+        navigate(`/results/${insertedResult.id}`);
+      } else {
+        console.error("Failed to save result:", error);
+        // Navigate with state as fallback
+        navigate(`/results/temp`, {
+          state: { ...resultPayload, testName: test.name, subdomains: test.subdomains },
+        });
+      }
+    } else {
+      // Not logged in — save to localStorage and show result with prompt
+      const tempResult = { ...resultPayload, testName: test.name, subdomains: test.subdomains };
+      localStorage.setItem("pendingTestResult", JSON.stringify(tempResult));
+      navigate(`/results/temp`, { state: tempResult });
     }
 
-    navigate(`/results/${id}`, {
-      state: {
-        subdomainScores,
-        totalScore,
-        testName: test.name,
-        subdomains: test.subdomains,
-        matchedSyndromes,
-        durationSeconds,
-        answersArray,
-      },
-    });
-  }, [id, answers, questionGroups, test, allQuestions.length, navigate]);
+    setSubmitting(false);
+  }, [id, test, answers, questions, submitting, navigate]);
 
-  if (!test || !questionGroups) {
+  // Loading state
+  if (loading) {
     return (
-      <div className="text-center py-12 text-muted-foreground text-sm">
-        검사 데이터를 불러올 수 없습니다.
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Coming soon
+  if (test?.is_coming_soon || !test || questions.length === 0) {
+    return (
+      <div className="text-center py-16 space-y-4 animate-fade-in">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto">
+          <Clock className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h2 className="text-lg font-bold">준비 중입니다</h2>
+        <p className="text-sm text-muted-foreground">
+          이 검사는 아직 준비 중이에요. 곧 만나볼 수 있어요!
+        </p>
+        <Button variant="outline" className="rounded-xl gap-1.5" onClick={() => navigate("/tests")}>
+          <ArrowLeft className="w-4 h-4" />
+          검사 목록으로 돌아가기
+        </Button>
       </div>
     );
   }
@@ -138,7 +209,7 @@ export default function TestTakingPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold truncate pr-4">{test.name}</h1>
         <div className={`flex items-center gap-1.5 text-sm font-mono font-semibold shrink-0 ${
-          timerExpired ? "text-destructive" : timeLeft <= 30 ? "text-warning" : "text-muted-foreground"
+          timerExpired ? "text-destructive" : timeLeft <= 30 ? "text-destructive" : "text-muted-foreground"
         }`}>
           <Clock className="w-4 h-4" />
           {timerExpired ? "시간 초과" : formatTime(timeLeft)}
@@ -148,7 +219,7 @@ export default function TestTakingPage() {
       {/* Progress */}
       <div>
         <div className="flex items-center justify-between mb-1.5 text-xs text-muted-foreground">
-          <span>{current + 1} / {allQuestions.length}</span>
+          <span>{current + 1} / {questions.length}</span>
           <span>{Math.round(progress)}%</span>
         </div>
         <Progress value={progress} className="h-2 rounded-full" />
@@ -156,13 +227,11 @@ export default function TestTakingPage() {
 
       {/* Question */}
       <Card className="p-6 rounded-2xl border-border/50 shadow-sm">
-        {/* Subdomain label */}
         <p className="text-xs text-muted-foreground mb-3 font-medium">
           {currentSubdomain}
         </p>
-
         <p className="text-base font-medium leading-relaxed mb-6">
-          Q{current + 1}. {allQuestions[current].text}
+          Q{current + 1}. {currentQuestion.text}
         </p>
 
         {/* Likert scale */}
@@ -173,7 +242,7 @@ export default function TestTakingPage() {
               <button
                 key={opt.score}
                 onClick={() => handleSelect(opt.score)}
-                className={`flex-1 flex flex-col items-center gap-1.5 py-3 md:py-3 px-1 rounded-xl border text-xs transition-all duration-200 active:scale-95 ${
+                className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl border text-xs transition-all duration-200 active:scale-95 ${
                   isSelected
                     ? "gradient-primary text-primary-foreground border-transparent shadow-md scale-[1.02]"
                     : "border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-primary/5"
@@ -201,11 +270,11 @@ export default function TestTakingPage() {
 
         {isLastQuestion ? (
           <Button
-            variant="hero"
-            className="flex-1 rounded-xl"
-            disabled={!allAnswered}
+            className="flex-1 rounded-xl gradient-primary text-primary-foreground"
+            disabled={!allAnswered || submitting}
             onClick={handleSubmit}
           >
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
             결과 보기
           </Button>
         ) : (
