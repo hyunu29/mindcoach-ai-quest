@@ -123,8 +123,8 @@ export default function CoachingPage() {
             user_id: user.id,
             related_syndrome: syndrome,
             related_test_result_id: resultId || null,
-            messages: [firstMsg] as unknown as Record<string, unknown>[],
-          })
+            messages: [firstMsg] as unknown as Json,
+          } as any)
           .select()
           .single();
 
