@@ -12,6 +12,7 @@ interface StreamChatParams {
     solutions?: string[];
   } | null;
   testResultSummary?: string | null;
+  emotionSummary?: string | null;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;

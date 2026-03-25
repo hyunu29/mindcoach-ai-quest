@@ -30,6 +30,9 @@ export default function CoachingPage() {
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [testResultSummaryCtx, setTestResultSummaryCtx] = useState<string | null>(null);
+  const [emotionSummaryCtx, setEmotionSummaryCtx] = useState<string | null>(null);
+
   const active = sessions.find((s) => s.id === activeId);
   const messages = active?.messages || [];
 
