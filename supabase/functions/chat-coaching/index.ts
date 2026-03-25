@@ -48,7 +48,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const { messages, syndrome_context, test_result_summary } = await req.json();
+    const { messages, syndrome_context, test_result_summary, emotion_summary } = await req.json();
 
     // Build context additions
     let contextMessage = "";
@@ -61,7 +61,10 @@ serve(async (req) => {
       if (syndrome_context.solutions?.length) contextMessage += `해결방안: ${syndrome_context.solutions.join(", ")}\n`;
     }
     if (test_result_summary) {
-      contextMessage += `\n## 최근 검사 결과\n${test_result_summary}\n`;
+      contextMessage += `\n## 이 사용자의 최근 검사 결과\n${test_result_summary}\n\n위 검사 결과를 참고하여 사용자의 현재 심리 상태를 이해하고, 맞춤 코칭을 제공하세요.\n사용자가 검사 결과에 대해 물으면 위 데이터를 바탕으로 구체적으로 답변하세요.\n`;
+    }
+    if (emotion_summary) {
+      contextMessage += `\n## 최근 7일 감정 기록\n${emotion_summary}\n`;
     }
 
     const aiMessages = (messages || []).map((m: { role: string; content: string }) => ({

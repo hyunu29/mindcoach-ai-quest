@@ -30,6 +30,9 @@ export default function CoachingPage() {
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [testResultSummaryCtx, setTestResultSummaryCtx] = useState<string | null>(null);
+  const [emotionSummaryCtx, setEmotionSummaryCtx] = useState<string | null>(null);
+
   const active = sessions.find((s) => s.id === activeId);
   const messages = active?.messages || [];
 
@@ -58,6 +61,38 @@ export default function CoachingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
+
+      // Fetch test results for AI context
+      const { data: testResults } = await supabase
+        .from("test_results")
+        .select("*, tests(name, related_syndrome)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (testResults && testResults.length > 0) {
+        const summary = testResults.map((r: any) =>
+          `- ${r.tests?.name || r.test_id}: 총점 ${r.total_score}/100 (${r.risk_label}), 관련 증후군: ${r.matched_syndrome || "없음"}, 검사일: ${new Date(r.created_at).toLocaleDateString("ko-KR")}`
+        ).join("\n");
+        setTestResultSummaryCtx(summary);
+      }
+
+      // Fetch recent 7 days emotions for AI context
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const { data: emotions } = await supabase
+        .from("emotions")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("created_at", sevenDaysAgo.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (emotions && emotions.length > 0) {
+        const eSummary = emotions.map((e: any) =>
+          `- ${new Date(e.created_at).toLocaleDateString("ko-KR")}: ${e.emoji}${e.memo ? " (" + e.memo + ")" : ""}`
+        ).join("\n");
+        setEmotionSummaryCtx(eSummary);
+      }
 
       const { data, error } = await supabase
         .from("coaching_sessions")
@@ -129,6 +164,8 @@ export default function CoachingPage() {
     await streamCoachingChat({
       messages: existingMsgs,
       syndromeContext: syndromeCtx,
+      testResultSummary: testResultSummaryCtx,
+      emotionSummary: emotionSummaryCtx,
       onDelta: (chunk) => {
         aiContent += chunk;
         const updatedMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
@@ -186,16 +223,18 @@ export default function CoachingPage() {
     let aiContent = "";
     const syndromeCtx = getSyndromeContext(active.related_syndrome);
 
-    // For crisis, prepend a crisis context
-    let testResultSummary: string | null = null;
+    // Combine crisis context with test result summary
+    let combinedTestSummary = testResultSummaryCtx;
     if (crisis) {
-      testResultSummary = `⚠️ 위험 신호 감지: ${crisis.type} (심각도: ${crisis.severity}). 사용자의 안전을 최우선으로 응답해주세요.`;
+      const crisisNote = `⚠️ 위험 신호 감지: ${crisis.type} (심각도: ${crisis.severity}). 사용자의 안전을 최우선으로 응답해주세요.`;
+      combinedTestSummary = combinedTestSummary ? `${crisisNote}\n\n${combinedTestSummary}` : crisisNote;
     }
 
     await streamCoachingChat({
       messages: updatedMsgs,
       syndromeContext: syndromeCtx,
-      testResultSummary,
+      testResultSummary: combinedTestSummary,
+      emotionSummary: emotionSummaryCtx,
       onDelta: (chunk) => {
         aiContent += chunk;
         const aiMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
