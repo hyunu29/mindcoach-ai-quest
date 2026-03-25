@@ -164,6 +164,8 @@ export default function CoachingPage() {
     await streamCoachingChat({
       messages: existingMsgs,
       syndromeContext: syndromeCtx,
+      testResultSummary: testResultSummaryCtx,
+      emotionSummary: emotionSummaryCtx,
       onDelta: (chunk) => {
         aiContent += chunk;
         const updatedMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
