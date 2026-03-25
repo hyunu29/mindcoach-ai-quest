@@ -62,6 +62,38 @@ export default function CoachingPage() {
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
 
+      // Fetch test results for AI context
+      const { data: testResults } = await supabase
+        .from("test_results")
+        .select("*, tests(name, related_syndrome)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (testResults && testResults.length > 0) {
+        const summary = testResults.map((r: any) =>
+          `- ${r.tests?.name || r.test_id}: 총점 ${r.total_score}/100 (${r.risk_label}), 관련 증후군: ${r.matched_syndrome || "없음"}, 검사일: ${new Date(r.created_at).toLocaleDateString("ko-KR")}`
+        ).join("\n");
+        setTestResultSummaryCtx(summary);
+      }
+
+      // Fetch recent 7 days emotions for AI context
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const { data: emotions } = await supabase
+        .from("emotions")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("created_at", sevenDaysAgo.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (emotions && emotions.length > 0) {
+        const eSummary = emotions.map((e: any) =>
+          `- ${new Date(e.created_at).toLocaleDateString("ko-KR")}: ${e.emoji}${e.memo ? " (" + e.memo + ")" : ""}`
+        ).join("\n");
+        setEmotionSummaryCtx(eSummary);
+      }
+
       const { data, error } = await supabase
         .from("coaching_sessions")
         .select("*")
