@@ -22,6 +22,7 @@ export async function streamCoachingChat({
   messages,
   syndromeContext,
   testResultSummary,
+  emotionSummary,
   onDelta,
   onDone,
   onError,
