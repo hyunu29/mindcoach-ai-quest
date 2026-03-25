@@ -223,16 +223,18 @@ export default function CoachingPage() {
     let aiContent = "";
     const syndromeCtx = getSyndromeContext(active.related_syndrome);
 
-    // For crisis, prepend a crisis context
-    let testResultSummary: string | null = null;
+    // Combine crisis context with test result summary
+    let combinedTestSummary = testResultSummaryCtx;
     if (crisis) {
-      testResultSummary = `⚠️ 위험 신호 감지: ${crisis.type} (심각도: ${crisis.severity}). 사용자의 안전을 최우선으로 응답해주세요.`;
+      const crisisNote = `⚠️ 위험 신호 감지: ${crisis.type} (심각도: ${crisis.severity}). 사용자의 안전을 최우선으로 응답해주세요.`;
+      combinedTestSummary = combinedTestSummary ? `${crisisNote}\n\n${combinedTestSummary}` : crisisNote;
     }
 
     await streamCoachingChat({
       messages: updatedMsgs,
       syndromeContext: syndromeCtx,
-      testResultSummary,
+      testResultSummary: combinedTestSummary,
+      emotionSummary: emotionSummaryCtx,
       onDelta: (chunk) => {
         aiContent += chunk;
         const aiMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
