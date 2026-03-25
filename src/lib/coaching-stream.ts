@@ -37,6 +37,7 @@ export async function streamCoachingChat({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       syndrome_context: syndromeContext || null,
       test_result_summary: testResultSummary || null,
+      emotion_summary: emotionSummary || null,
     }),
   });
 
