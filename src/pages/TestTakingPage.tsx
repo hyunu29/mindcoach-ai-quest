@@ -112,68 +112,73 @@ export default function TestTakingPage() {
     if (!id || !test || questions.length === 0 || submitting) return;
     setSubmitting(true);
 
-    // Build subdomain scores
-    const subdomainMap: Record<string, { total: number; count: number }> = {};
-    questions.forEach((q, i) => {
-      const raw = answers[i] || 3;
-      const score = q.isReversed ? (6 - raw) : raw;
-      if (!subdomainMap[q.subdomain]) {
-        subdomainMap[q.subdomain] = { total: 0, count: 0 };
+    try {
+      // Build subdomain scores
+      const subdomainMap: Record<string, { total: number; count: number }> = {};
+      questions.forEach((q, i) => {
+        const raw = answers[i] || 3;
+        const score = q.isReversed ? (6 - raw) : raw;
+        if (!subdomainMap[q.subdomain]) {
+          subdomainMap[q.subdomain] = { total: 0, count: 0 };
+        }
+        subdomainMap[q.subdomain].total += score;
+        subdomainMap[q.subdomain].count += 1;
+      });
+
+      const subdomainScores: Record<string, number> = {};
+      for (const [key, val] of Object.entries(subdomainMap)) {
+        subdomainScores[key] = val.total;
       }
-      subdomainMap[q.subdomain].total += score;
-      subdomainMap[q.subdomain].count += 1;
-    });
 
-    const subdomainScores: Record<string, number> = {};
-    for (const [key, val] of Object.entries(subdomainMap)) {
-      subdomainScores[key] = val.total;
-    }
+      const totalScore = Object.values(subdomainScores).reduce((a, b) => a + b, 0);
+      const risk = getRiskLevel(totalScore);
+      const riskLevel = totalScore <= 40 ? "safe" : totalScore <= 60 ? "caution" : totalScore <= 80 ? "warning" : "danger";
 
-    const totalScore = Object.values(subdomainScores).reduce((a, b) => a + b, 0);
-    const risk = getRiskLevel(totalScore);
-    const riskLevel = totalScore <= 40 ? "safe" : totalScore <= 60 ? "caution" : totalScore <= 80 ? "warning" : "danger";
+      const answersArray = questions.map((_, i) => ({
+        questionId: i + 1,
+        answer: answers[i] || 0,
+      }));
 
-    const answersArray = questions.map((_, i) => ({
-      questionId: i + 1,
-      answer: answers[i] || 0,
-    }));
+      const { data: { user } } = await supabase.auth.getUser();
 
-    const { data: { user } } = await supabase.auth.getUser();
+      const resultPayload = {
+        test_id: id,
+        answers: answersArray as any,
+        subdomain_scores: subdomainScores as any,
+        total_score: totalScore,
+        risk_level: riskLevel,
+        risk_label: risk.level,
+        matched_syndrome: test.related_syndrome || null,
+      };
 
-    const resultPayload = {
-      test_id: id,
-      answers: answersArray as any,
-      subdomain_scores: subdomainScores as any,
-      total_score: totalScore,
-      risk_level: riskLevel,
-      risk_label: risk.level,
-      matched_syndrome: test.related_syndrome || null,
-    };
+      if (user) {
+        const { data: insertedResult, error } = await supabase
+          .from("test_results")
+          .insert({ ...resultPayload, user_id: user.id })
+          .select("id")
+          .single();
 
-    if (user) {
-      const { data: insertedResult, error } = await supabase
-        .from("test_results")
-        .insert({ ...resultPayload, user_id: user.id })
-        .select("id")
-        .single();
-
-      if (!error && insertedResult) {
-        navigate(`/results/${insertedResult.id}`);
+        if (!error && insertedResult) {
+          navigate(`/results/${insertedResult.id}`);
+          return;
+        } else {
+          console.error("Failed to save result:", error);
+          toast.error("결과 저장에 실패했습니다. 임시 결과를 표시합니다.");
+          navigate(`/results/temp`, {
+            state: { ...resultPayload, testName: test.name, subdomains: test.subdomains },
+          });
+        }
       } else {
-        console.error("Failed to save result:", error);
-        // Navigate with state as fallback
-        navigate(`/results/temp`, {
-          state: { ...resultPayload, testName: test.name, subdomains: test.subdomains },
-        });
+        const tempResult = { ...resultPayload, testName: test.name, subdomains: test.subdomains };
+        localStorage.setItem("pendingTestResult", JSON.stringify(tempResult));
+        navigate(`/results/temp`, { state: tempResult });
       }
-    } else {
-      // Not logged in — save to localStorage and show result with prompt
-      const tempResult = { ...resultPayload, testName: test.name, subdomains: test.subdomains };
-      localStorage.setItem("pendingTestResult", JSON.stringify(tempResult));
-      navigate(`/results/temp`, { state: tempResult });
+    } catch (err) {
+      console.error("Submit error:", err);
+      toast.error("결과 처리 중 오류가 발생했습니다.");
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
   }, [id, test, answers, questions, submitting, navigate]);
 
   // Loading state
