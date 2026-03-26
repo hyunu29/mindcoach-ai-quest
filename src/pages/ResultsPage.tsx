@@ -50,20 +50,29 @@ export default function ResultsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     setIsLoggedIn(!!user);
 
-    // Case 1: temp result from state (not saved to DB)
-    if (id === "temp" && locationState) {
+    // Case 1: temp result from state or localStorage
+    if (id === "temp") {
       setIsTempResult(true);
-      setResult({
-        testName: locationState.testName || "심리검사",
-        subdomains: locationState.subdomains || [],
-        subdomainScores: locationState.subdomain_scores || {},
-        totalScore: locationState.total_score || 0,
-        riskLevel: locationState.risk_level || "safe",
-        riskLabel: locationState.risk_label || "양호",
-        matchedSyndrome: locationState.matched_syndrome || null,
-        createdAt: null,
-        testId: locationState.test_id || "",
-      });
+      const stateData = locationState || (() => {
+        try {
+          const pending = localStorage.getItem("pendingTestResult");
+          return pending ? JSON.parse(pending) : null;
+        } catch { return null; }
+      })();
+
+      if (stateData) {
+        setResult({
+          testName: stateData.testName || "심리검사",
+          subdomains: stateData.subdomains || [],
+          subdomainScores: stateData.subdomain_scores || {},
+          totalScore: stateData.total_score || 0,
+          riskLevel: stateData.risk_level || "safe",
+          riskLabel: stateData.risk_label || "양호",
+          matchedSyndrome: stateData.matched_syndrome || null,
+          createdAt: null,
+          testId: stateData.test_id || "",
+        });
+      }
       setLoading(false);
       return;
     }
@@ -80,7 +89,7 @@ export default function ResultsPage() {
         const testData = data.tests as any;
         setResult({
           testName: testData?.name || "심리검사",
-          subdomains: (testData?.subdomains as string[]) || [],
+          subdomains: (testData?.subdomains as string[]) || Object.keys((data.subdomain_scores as Record<string, number>) || {}),
           subdomainScores: (data.subdomain_scores as Record<string, number>) || {},
           totalScore: data.total_score,
           riskLevel: data.risk_level,
