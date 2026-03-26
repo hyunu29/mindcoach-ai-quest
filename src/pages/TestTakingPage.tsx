@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { getRiskLevel } from "@/data/seed-data";
+import { toast } from "sonner";
 
 const likertOptions = [
   { score: 1, label: "전혀 그렇지 않다" },
