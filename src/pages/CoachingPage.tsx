@@ -14,6 +14,9 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { streamCoachingChat } from "@/lib/coaching-stream";
 import type { ChatMessage, DbSession } from "@/lib/coaching-types";
+import { detectEmotionFromText, getSecondaryEmotionsFromKeywords } from "@/lib/emotion-detection";
+import EmotionRecordCard, { type EmotionCardData } from "@/components/coaching/EmotionRecordCard";
+import { emotionOptions, type PrimaryEmotion } from "@/lib/emotion-agent-types";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
