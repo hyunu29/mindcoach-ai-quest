@@ -14,6 +14,9 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { streamCoachingChat } from "@/lib/coaching-stream";
 import type { ChatMessage, DbSession } from "@/lib/coaching-types";
+import { detectEmotionFromText, getSecondaryEmotionsFromKeywords } from "@/lib/emotion-detection";
+import EmotionRecordCard, { type EmotionCardData } from "@/components/coaching/EmotionRecordCard";
+import { emotionOptions, type PrimaryEmotion } from "@/lib/emotion-agent-types";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
@@ -244,7 +247,30 @@ export default function CoachingPage() {
       },
       onDone: async () => {
         setIsTyping(false);
-        const aiMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
+
+        // Detect emotion from user message to attach card
+        const detected = detectEmotionFromText(text);
+        let emotionCard: ChatMessage['emotionCard'] | undefined;
+
+        if (detected && updatedMsgs.length >= 2) {
+          const secondaries = getSecondaryEmotionsFromKeywords(text, detected.primaryEmotion);
+          const emotionOpt = emotionOptions.find(e => e.key === detected.primaryEmotion);
+          emotionCard = {
+            primaryEmotion: detected.primaryEmotion,
+            secondaryEmotions: secondaries,
+            emotionScore: detected.emotionScore,
+            situation: text,
+            bodyReactions: detected.bodyReactions,
+            aiComment: `${emotionOpt?.emoji || ''} 코칭 대화에서 감지된 감정이에요.`,
+          };
+        }
+
+        const aiMsg: ChatMessage = {
+          role: "ai",
+          content: aiContent,
+          timestamp: new Date().toISOString(),
+          ...(emotionCard ? { emotionCard } : {}),
+        };
         const finalMsgs = [...updatedMsgs, aiMsg];
 
         setSessions((prev) => prev.map((s) => s.id === activeId ? { ...s, messages: finalMsgs } : s));
@@ -436,6 +462,15 @@ export default function CoachingPage() {
                     <p className="font-bold text-sm mb-1.5">{msg.tip.title}</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">{msg.tip.description}</p>
                   </div>
+                </div>
+              )}
+              {msg.emotionCard && userId && activeId && (
+                <div className="ml-10 mt-2 max-w-[80%]">
+                  <EmotionRecordCard
+                    data={msg.emotionCard as EmotionCardData}
+                    userId={userId}
+                    sessionId={activeId}
+                  />
                 </div>
               )}
             </div>

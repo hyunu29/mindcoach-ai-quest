@@ -193,6 +193,14 @@ export default function EmotionHistory({ userId, refreshKey }: EmotionHistoryPro
                           <p className="text-[10px] text-muted-foreground">{month + 1}월 {day}일</p>
                         </div>
                       </div>
+                      {/* Source badge */}
+                      <div>
+                        {record.source === 'coaching_chat' ? (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/30 text-primary/80">💬 코칭에서 기록</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-border text-muted-foreground">✍️ 직접 기록</Badge>
+                        )}
+                      </div>
                       {(record.secondary_emotions as string[])?.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {(record.secondary_emotions as string[]).map((s: string) => (
@@ -203,6 +211,16 @@ export default function EmotionHistory({ userId, refreshKey }: EmotionHistoryPro
                       {record.situation && <p className="text-xs text-muted-foreground italic">"{record.situation}"</p>}
                       {record.ai_comment && (
                         <p className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg p-2">💡 {record.ai_comment}</p>
+                      )}
+                      {record.source === 'coaching_chat' && record.source_conversation_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-[10px] text-primary h-6 px-2"
+                          onClick={() => navigate(`/coaching`)}
+                        >
+                          💬 코칭 대화 보기
+                        </Button>
                       )}
                     </div>
                   </PopoverContent>
