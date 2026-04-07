@@ -64,6 +64,8 @@ export type Database = {
           recorded_at: string
           secondary_emotions: string[] | null
           situation: string | null
+          source: string
+          source_conversation_id: string | null
           user_id: string
         }
         Insert: {
@@ -77,6 +79,8 @@ export type Database = {
           recorded_at?: string
           secondary_emotions?: string[] | null
           situation?: string | null
+          source?: string
+          source_conversation_id?: string | null
           user_id: string
         }
         Update: {
@@ -90,9 +94,19 @@ export type Database = {
           recorded_at?: string
           secondary_emotions?: string[] | null
           situation?: string | null
+          source?: string
+          source_conversation_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "emotion_records_source_conversation_id_fkey"
+            columns: ["source_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       emotion_streaks: {
         Row: {
