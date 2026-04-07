@@ -464,6 +464,15 @@ export default function CoachingPage() {
                   </div>
                 </div>
               )}
+              {msg.emotionCard && userId && activeId && (
+                <div className="ml-10 mt-2 max-w-[80%]">
+                  <EmotionRecordCard
+                    data={msg.emotionCard as EmotionCardData}
+                    userId={userId}
+                    sessionId={activeId}
+                  />
+                </div>
+              )}
             </div>
           ))}
           {isTyping && messages[messages.length - 1]?.role !== "ai" && (
