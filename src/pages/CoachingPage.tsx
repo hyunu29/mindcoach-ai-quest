@@ -247,7 +247,30 @@ export default function CoachingPage() {
       },
       onDone: async () => {
         setIsTyping(false);
-        const aiMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
+
+        // Detect emotion from user message to attach card
+        const detected = detectEmotionFromText(text);
+        let emotionCard: ChatMessage['emotionCard'] | undefined;
+
+        if (detected && updatedMsgs.length >= 2) {
+          const secondaries = getSecondaryEmotionsFromKeywords(text, detected.primaryEmotion);
+          const emotionOpt = emotionOptions.find(e => e.key === detected.primaryEmotion);
+          emotionCard = {
+            primaryEmotion: detected.primaryEmotion,
+            secondaryEmotions: secondaries,
+            emotionScore: detected.emotionScore,
+            situation: text,
+            bodyReactions: detected.bodyReactions,
+            aiComment: `${emotionOpt?.emoji || ''} 코칭 대화에서 감지된 감정이에요.`,
+          };
+        }
+
+        const aiMsg: ChatMessage = {
+          role: "ai",
+          content: aiContent,
+          timestamp: new Date().toISOString(),
+          ...(emotionCard ? { emotionCard } : {}),
+        };
         const finalMsgs = [...updatedMsgs, aiMsg];
 
         setSessions((prev) => prev.map((s) => s.id === activeId ? { ...s, messages: finalMsgs } : s));
