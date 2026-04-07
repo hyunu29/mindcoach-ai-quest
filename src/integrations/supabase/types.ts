@@ -52,6 +52,78 @@ export type Database = {
           },
         ]
       }
+      emotion_records: {
+        Row: {
+          ai_comment: string | null
+          body_reaction: string[] | null
+          conversation_log: Json | null
+          created_at: string
+          emotion_score: number
+          id: string
+          primary_emotion: string
+          recorded_at: string
+          secondary_emotions: string[] | null
+          situation: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_comment?: string | null
+          body_reaction?: string[] | null
+          conversation_log?: Json | null
+          created_at?: string
+          emotion_score: number
+          id?: string
+          primary_emotion: string
+          recorded_at?: string
+          secondary_emotions?: string[] | null
+          situation?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_comment?: string | null
+          body_reaction?: string[] | null
+          conversation_log?: Json | null
+          created_at?: string
+          emotion_score?: number
+          id?: string
+          primary_emotion?: string
+          recorded_at?: string
+          secondary_emotions?: string[] | null
+          situation?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      emotion_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_record_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_record_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_record_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       emotions: {
         Row: {
           created_at: string
