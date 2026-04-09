@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Send, Plus, MessageSquare, Phone, Menu, X, Brain, MessageCircleHeart, Loader2,
+  Send, Plus, MessageSquare, Phone, Menu, X, Brain, MessageCircleHeart, Loader2, CheckCircle2, ClipboardCheck,
 } from "lucide-react";
 import { detectCrisisSignal, syndromes } from "@/data/seed-data";
 import {
@@ -14,9 +14,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { streamCoachingChat } from "@/lib/coaching-stream";
 import type { ChatMessage, DbSession } from "@/lib/coaching-types";
-import { detectEmotionFromText, getSecondaryEmotionsFromKeywords } from "@/lib/emotion-detection";
-import EmotionRecordCard, { type EmotionCardData } from "@/components/coaching/EmotionRecordCard";
-import { emotionOptions, type PrimaryEmotion } from "@/lib/emotion-agent-types";
+import { runAgentActions, type AgentDecision } from "@/services/agentEngine";
+import { getRecentEmotions, buildEmotionSummary } from "@/services/agentActions";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
@@ -36,10 +35,12 @@ export default function CoachingPage() {
   const [testResultSummaryCtx, setTestResultSummaryCtx] = useState<string | null>(null);
   const [emotionSummaryCtx, setEmotionSummaryCtx] = useState<string | null>(null);
 
+  // Track whether emotion was already saved in this session
+  const [emotionSavedInSession, setEmotionSavedInSession] = useState<Record<string, boolean>>({});
+
   const active = sessions.find((s) => s.id === activeId);
   const messages = active?.messages || [];
 
-  // Get syndrome context for AI
   const getSyndromeContext = (syndromeName: string | null) => {
     if (!syndromeName) return null;
     const syndrome = syndromes.find((s) => s.name === syndromeName);
@@ -53,19 +54,16 @@ export default function CoachingPage() {
     };
   };
 
-  // Auto-scroll
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Init: get user, load sessions
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
 
-      // Fetch test results for AI context
       const { data: testResults } = await supabase
         .from("test_results")
         .select("*, tests(name, related_syndrome)")
@@ -80,21 +78,14 @@ export default function CoachingPage() {
         setTestResultSummaryCtx(summary);
       }
 
-      // Fetch recent 7 days emotions for AI context
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { data: emotions } = await supabase
-        .from("emotions")
-        .select("*")
-        .eq("user_id", user.id)
-        .gte("created_at", sevenDaysAgo.toISOString())
-        .order("created_at", { ascending: false });
-
-      if (emotions && emotions.length > 0) {
-        const eSummary = emotions.map((e: any) =>
-          `- ${new Date(e.created_at).toLocaleDateString("ko-KR")}: ${e.emoji}${e.memo ? " (" + e.memo + ")" : ""}`
-        ).join("\n");
-        setEmotionSummaryCtx(eSummary);
+      // Fetch recent emotions for context
+      try {
+        const recentEmotions = await getRecentEmotions(user.id);
+        if (recentEmotions.length > 0) {
+          setEmotionSummaryCtx(buildEmotionSummary(recentEmotions));
+        }
+      } catch (e) {
+        console.error("Failed to fetch recent emotions:", e);
       }
 
       const { data, error } = await supabase
@@ -118,35 +109,18 @@ export default function CoachingPage() {
       const syndrome = searchParams.get("syndrome");
       const resultId = searchParams.get("resultId");
       if (syndrome) {
-        const firstMsg: ChatMessage = {
-          role: "ai",
-          content: "",
-          timestamp: new Date().toISOString(),
-        };
+        const firstMsg: ChatMessage = { role: "ai", content: "", timestamp: new Date().toISOString() };
 
         const { data: newSession, error: insertError } = await supabase
           .from("coaching_sessions")
-          .insert({
-            user_id: user.id,
-            related_syndrome: syndrome,
-            related_test_result_id: resultId || null,
-            messages: [firstMsg] as any,
-          } as any)
+          .insert({ user_id: user.id, related_syndrome: syndrome, related_test_result_id: resultId || null, messages: [firstMsg] as any } as any)
           .select()
           .single();
 
         if (!insertError && newSession) {
-          const ns: DbSession = {
-            id: newSession.id,
-            related_syndrome: newSession.related_syndrome,
-            messages: [firstMsg],
-            created_at: newSession.created_at,
-            updated_at: newSession.updated_at,
-          };
+          const ns: DbSession = { id: newSession.id, related_syndrome: newSession.related_syndrome, messages: [firstMsg], created_at: newSession.created_at, updated_at: newSession.updated_at };
           setSessions((prev) => [ns, ...prev]);
           setActiveId(newSession.id);
-
-          // Generate first AI message via streaming
           generateFirstMessage(newSession.id, syndrome, []);
         }
       } else if (loaded.length > 0) {
@@ -161,7 +135,6 @@ export default function CoachingPage() {
   const generateFirstMessage = async (sessionId: string, syndrome: string | null, existingMsgs: ChatMessage[]) => {
     setIsTyping(true);
     let aiContent = "";
-
     const syndromeCtx = getSyndromeContext(syndrome);
 
     await streamCoachingChat({
@@ -172,35 +145,24 @@ export default function CoachingPage() {
       onDelta: (chunk) => {
         aiContent += chunk;
         const updatedMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
-        setSessions((prev) =>
-          prev.map((s) => s.id === sessionId ? { ...s, messages: [updatedMsg] } : s)
-        );
+        setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [updatedMsg] } : s));
       },
       onDone: async () => {
         setIsTyping(false);
         const finalMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
-        await supabase
-          .from("coaching_sessions")
-          .update({ messages: [finalMsg] as any, updated_at: new Date().toISOString() })
-          .eq("id", sessionId);
+        await supabase.from("coaching_sessions").update({ messages: [finalMsg] as any, updated_at: new Date().toISOString() }).eq("id", sessionId);
       },
       onError: (err) => {
         setIsTyping(false);
-        const fallbackMsg: ChatMessage = {
-          role: "ai",
-          content: "안녕하세요! 마인드코치 AI입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.",
-          timestamp: new Date().toISOString(),
-        };
-        setSessions((prev) =>
-          prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s)
-        );
+        const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 마인드코치 AI입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
+        setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s));
         toast({ title: "AI 연결 오류", description: err, variant: "destructive" });
       },
     });
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isTyping || !active || !userId) return;
+    if (!input.trim() || isTyping || !active || !userId || !activeId) return;
     const text = input.trim();
 
     const crisis = detectCrisisSignal(text);
@@ -216,22 +178,36 @@ export default function CoachingPage() {
     setInput("");
     setIsTyping(true);
 
-    // Save user message
-    await supabase
-      .from("coaching_sessions")
-      .update({ messages: updatedMsgs as any, updated_at: new Date().toISOString() })
-      .eq("id", activeId);
+    await supabase.from("coaching_sessions").update({ messages: updatedMsgs as any, updated_at: new Date().toISOString() }).eq("id", activeId);
+
+    // Run agent actions (emotion save, test recommend) — skip if crisis
+    let agentResult: AgentDecision | null = null;
+    if (!crisis) {
+      try {
+        agentResult = await runAgentActions(
+          text,
+          updatedMsgs,
+          userId,
+          !!emotionSavedInSession[activeId],
+        );
+        if (agentResult.saveEmotion && agentResult.savedEmotionId) {
+          setEmotionSavedInSession(prev => ({ ...prev, [activeId]: true }));
+        }
+      } catch (err) {
+        console.error("Agent action error:", err);
+      }
+    }
 
     // Stream AI response
     let aiContent = "";
     const syndromeCtx = getSyndromeContext(active.related_syndrome);
-
-    // Combine crisis context with test result summary
     let combinedTestSummary = testResultSummaryCtx;
     if (crisis) {
       const crisisNote = `⚠️ 위험 신호 감지: ${crisis.type} (심각도: ${crisis.severity}). 사용자의 안전을 최우선으로 응답해주세요.`;
       combinedTestSummary = combinedTestSummary ? `${crisisNote}\n\n${combinedTestSummary}` : crisisNote;
     }
+
+    const currentSessionId = activeId;
 
     await streamCoachingChat({
       messages: updatedMsgs,
@@ -241,54 +217,39 @@ export default function CoachingPage() {
       onDelta: (chunk) => {
         aiContent += chunk;
         const aiMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
-        setSessions((prev) =>
-          prev.map((s) => s.id === activeId ? { ...s, messages: [...updatedMsgs, aiMsg] } : s)
-        );
+        setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages: [...updatedMsgs, aiMsg] } : s));
       },
       onDone: async () => {
         setIsTyping(false);
 
-        // Detect emotion from user message to attach card
-        const detected = detectEmotionFromText(text);
-        let emotionCard: ChatMessage['emotionCard'] | undefined;
-
-        if (detected && updatedMsgs.length >= 2) {
-          const secondaries = getSecondaryEmotionsFromKeywords(text, detected.primaryEmotion);
-          const emotionOpt = emotionOptions.find(e => e.key === detected.primaryEmotion);
-          emotionCard = {
-            primaryEmotion: detected.primaryEmotion,
-            secondaryEmotions: secondaries,
-            emotionScore: detected.emotionScore,
-            situation: text,
-            bodyReactions: detected.bodyReactions,
-            aiComment: `${emotionOpt?.emoji || ''} 코칭 대화에서 감지된 감정이에요.`,
-          };
-        }
-
+        // Build AI message with agent action metadata
         const aiMsg: ChatMessage = {
           role: "ai",
           content: aiContent,
           timestamp: new Date().toISOString(),
-          ...(emotionCard ? { emotionCard } : {}),
         };
+
+        // Attach agent action results as metadata
+        if (agentResult?.saveEmotion && agentResult.savedEmotionId) {
+          (aiMsg as any).agentAction = {
+            type: "emotion_saved",
+            emotionId: agentResult.savedEmotionId,
+            emoji: agentResult.emotionData?.emoji,
+          };
+        }
+        if (agentResult?.recommendTests && agentResult.recommendedTests) {
+          (aiMsg as any).recommendedTests = agentResult.recommendedTests;
+        }
+
         const finalMsgs = [...updatedMsgs, aiMsg];
-
-        setSessions((prev) => prev.map((s) => s.id === activeId ? { ...s, messages: finalMsgs } : s));
-
-        await supabase
-          .from("coaching_sessions")
-          .update({ messages: finalMsgs as any, updated_at: new Date().toISOString() })
-          .eq("id", activeId);
+        setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages: finalMsgs } : s));
+        await supabase.from("coaching_sessions").update({ messages: finalMsgs as any, updated_at: new Date().toISOString() }).eq("id", currentSessionId);
       },
       onError: (err) => {
         setIsTyping(false);
-        const fallbackMsg: ChatMessage = {
-          role: "ai",
-          content: "죄송합니다, 일시적으로 응답을 생성하지 못했어요. 다시 시도해 주세요. 🙏",
-          timestamp: new Date().toISOString(),
-        };
+        const fallbackMsg: ChatMessage = { role: "ai", content: "죄송합니다, 일시적으로 응답을 생성하지 못했어요. 다시 시도해 주세요. 🙏", timestamp: new Date().toISOString() };
         const finalMsgs = [...updatedMsgs, fallbackMsg];
-        setSessions((prev) => prev.map((s) => s.id === activeId ? { ...s, messages: finalMsgs } : s));
+        setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages: finalMsgs } : s));
         toast({ title: "AI 응답 오류", description: err, variant: "destructive" });
       },
     });
@@ -299,33 +260,18 @@ export default function CoachingPage() {
 
     const { data, error } = await supabase
       .from("coaching_sessions")
-      .insert({
-        user_id: userId,
-        related_syndrome: null,
-        messages: [] as any,
-      } as any)
+      .insert({ user_id: userId, related_syndrome: null, messages: [] as any } as any)
       .select()
       .single();
 
-    if (error) {
-      toast({ title: "세션 생성 실패", variant: "destructive" });
-      return;
-    }
+    if (error) { toast({ title: "세션 생성 실패", variant: "destructive" }); return; }
 
-    const ns: DbSession = {
-      id: data.id,
-      related_syndrome: null,
-      messages: [],
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-    };
+    const ns: DbSession = { id: data.id, related_syndrome: null, messages: [], created_at: data.created_at, updated_at: data.updated_at };
     setSessions((prev) => [ns, ...prev]);
     setActiveId(data.id);
     setShowCrisisBanner(false);
     setCrisisInfo(null);
     setSidebarOpen(false);
-
-    // Generate first AI message
     generateFirstMessage(data.id, null, []);
   };
 
@@ -387,9 +333,7 @@ export default function CoachingPage() {
               )}
             </button>
           ))}
-          {sessions.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-8">아직 대화가 없어요</p>
-          )}
+          {sessions.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">아직 대화가 없어요</p>}
         </div>
       </aside>
 
@@ -456,6 +400,8 @@ export default function CoachingPage() {
                   {msg.content.split("**").map((part, j) => j % 2 === 1 ? <strong key={j}>{part}</strong> : <span key={j}>{part}</span>)}
                 </div>
               </div>
+
+              {/* Tip card */}
               {msg.tip && (
                 <div className="ml-10 mt-2">
                   <div className="rounded-xl p-4 max-w-[80%] animate-fade-in shadow-sm border" style={{ backgroundColor: "#F5F3FF", borderColor: "hsl(263 70% 90%)" }}>
@@ -464,13 +410,44 @@ export default function CoachingPage() {
                   </div>
                 </div>
               )}
+
+              {/* Agent action: emotion saved notification */}
+              {(msg as any).agentAction?.type === "emotion_saved" && (
+                <div className="ml-10 mt-2 max-w-[80%]">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium animate-fade-in"
+                    style={{ backgroundColor: "hsl(var(--primary) / 0.08)", color: "hsl(var(--primary))" }}>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>✅ 감정 트래킹에 기록되었습니다</span>
+                    <button
+                      onClick={() => navigate("/emotion")}
+                      className="ml-auto underline text-xs font-semibold hover:opacity-80"
+                    >
+                      확인하기 →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Agent action: test recommendation */}
+              {(msg as any).recommendedTests && (msg as any).recommendedTests.length > 0 && (
+                <div className="ml-10 mt-2 max-w-[80%] space-y-1.5">
+                  {(msg as any).recommendedTests.slice(0, 2).map((test: any) => (
+                    <button
+                      key={test.id}
+                      onClick={() => navigate(`/tests/${test.id}`)}
+                      className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-xs font-medium border border-primary/20 hover:bg-primary/5 transition-colors text-left animate-fade-in"
+                    >
+                      <ClipboardCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="text-primary">📝 {test.name} 바로가기 →</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Legacy emotion card (from previous implementation) */}
               {msg.emotionCard && userId && activeId && (
                 <div className="ml-10 mt-2 max-w-[80%]">
-                  <EmotionRecordCard
-                    data={msg.emotionCard as EmotionCardData}
-                    userId={userId}
-                    sessionId={activeId}
-                  />
+                  <EmotionRecordCardLegacy data={msg.emotionCard} />
                 </div>
               )}
             </div>
@@ -531,6 +508,17 @@ export default function CoachingPage() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** Simple legacy card for backward compat with old emotionCard messages */
+function EmotionRecordCardLegacy({ data }: { data: any }) {
+  return (
+    <div className="rounded-xl p-3 text-xs border border-primary/15 bg-primary/5 animate-fade-in">
+      <p className="font-semibold mb-1">📝 감정 감지</p>
+      <p>💜 {data.primaryEmotion} {data.secondaryEmotions?.length > 0 && `→ ${data.secondaryEmotions.join(', ')}`}</p>
+      {data.bodyReactions?.length > 0 && <p>🫀 {data.bodyReactions.join(', ')}</p>}
     </div>
   );
 }
