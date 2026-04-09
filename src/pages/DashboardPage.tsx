@@ -126,7 +126,14 @@ export default function DashboardPage() {
         {todayEmotion ? (
           <div className="text-center py-2">
             <span className="text-3xl">{emotionOptions.find(e => e.label === todayEmotion.emoji || e.emoji === todayEmotion.emoji)?.emoji || todayEmotion.emoji}</span>
-            <p className="text-sm text-muted-foreground mt-2">오늘 이미 감정을 기록했어요!</p>
+            {todayEmotion.memo?.startsWith("[AI 코치]") ? (
+              <div className="mt-2">
+                <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">🤖 AI 코치가 기록</span>
+                <p className="text-xs text-muted-foreground mt-1">{todayEmotion.memo.replace("[AI 코치] ", "")}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground mt-2">오늘 이미 감정을 기록했어요!</p>
+            )}
             <Button variant="ghost" size="sm" className="mt-1" onClick={() => navigate("/emotion")}>
               수정하기 →
             </Button>
