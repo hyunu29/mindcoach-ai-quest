@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import logo from "../../../public/logo.png";
 
 export default function LandingNav() {
   const navigate = useNavigate();
@@ -31,8 +31,7 @@ export default function LandingNav() {
     >
       <div className="container flex items-center justify-between h-16 px-6">
         <div className="flex items-center gap-2 font-bold text-lg">
-          <Sparkles className="w-5 h-5 text-primary" />
-          <span>마인드코치 AI</span>
+          <img src={logo} alt="마인드코치 AI" className="h-8 w-auto" />
         </div>
 
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/90">
