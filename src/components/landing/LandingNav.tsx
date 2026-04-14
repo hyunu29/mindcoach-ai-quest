@@ -35,14 +35,14 @@ export default function LandingNav() {
           <span>마인드코치 AI</span>
         </div>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-          <button onClick={() => scrollTo("features")} className="hover:text-foreground transition-colors">
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/90">
+          <button onClick={() => scrollTo("features")} className="hover:text-white transition-colors">
             기능 소개
           </button>
-          <button onClick={() => scrollTo("expert")} className="hover:text-foreground transition-colors">
+          <button onClick={() => scrollTo("expert")} className="hover:text-white transition-colors">
             전문가 소개
           </button>
-          <button onClick={() => scrollTo("how-it-works")} className="hover:text-foreground transition-colors">
+          <button onClick={() => scrollTo("how-it-works")} className="hover:text-white transition-colors">
             이용 방법
           </button>
         </nav>
