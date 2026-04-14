@@ -1,24 +1,30 @@
-import { Brain, MessageCircle, BarChart3 } from "lucide-react";
+import { Brain, MessageCircle, BarChart3, ShieldAlert } from "lucide-react";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 
 const features = [
   {
     icon: Brain,
-    title: "맞춤형 심리검사",
-    desc: "26종의 전문 검사지로 학업 스트레스, 시험 불안, 자존감 등을 정밀 분석합니다.",
+    title: "AI 심리검사",
+    desc: "26종 표준화 심리검사를 온라인으로 실시하고 즉시 결과를 확인하세요. 4개 하위영역별 분석과 위험도를 시각화합니다.",
     color: "bg-primary/10 text-primary",
   },
   {
     icon: MessageCircle,
-    title: "AI 코칭 상담",
-    desc: "검사 결과를 기반으로 1:1 맞춤 코칭을 제공합니다. 언제든 대화할 수 있어요.",
+    title: "AI 맞춤 코칭",
+    desc: "검사 결과를 기반으로 32가지 수험생 심리 증후군에 맞는 1:1 대화형 코칭을 제공합니다.",
     color: "bg-secondary/10 text-secondary",
   },
   {
     icon: BarChart3,
     title: "감정 트래킹",
-    desc: "매일의 감정을 기록하고 변화 추이를 확인하세요. 나만의 멘탈 리포트를 만들어요.",
+    desc: "매일 감정을 기록하고, 주간·월간 패턴을 분석합니다. AI 코치가 대화 중 자동으로 기록해드립니다.",
     color: "bg-accent/10 text-accent",
+  },
+  {
+    icon: ShieldAlert,
+    title: "위험 신호 감지",
+    desc: "자해·자살 위험 신호를 실시간 감지하고, 전문가 연계를 안내하는 안전장치가 작동합니다.",
+    color: "bg-warning/10 text-warning",
   },
 ];
 
@@ -26,19 +32,20 @@ export default function FeaturesSection() {
   const ref = useScrollReveal();
 
   return (
-    <section className="py-20 px-6">
-      <div className="container" ref={ref}>
+    <section id="features" className="py-24 px-6 bg-muted/50" ref={ref}>
+      <div className="container max-w-5xl">
         <h2 className="text-2xl md:text-3xl font-bold text-center mb-4">
-          어떻게 도와줄 수 있을까요?
+          AI가 당신의 마음을 분석하고, 코칭합니다
         </h2>
-        <p className="text-muted-foreground text-center mb-12 max-w-lg mx-auto">
-          수험생의 마음 건강을 위한 세 가지 핵심 기능
+        <p className="text-muted-foreground text-center mb-14 max-w-lg mx-auto">
+          수험생의 마음 건강을 위한 네 가지 핵심 기능
         </p>
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+
+        <div className="grid md:grid-cols-2 gap-6">
           {features.map((f, i) => (
             <div
               key={f.title}
-              className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 border border-border/50"
+              className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-border/50"
               style={{ animationDelay: `${i * 100 + 100}ms` }}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${f.color}`}>
