@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import logo from "../../../public/logo.png";
 
 export default function LandingNav() {
   const navigate = useNavigate();

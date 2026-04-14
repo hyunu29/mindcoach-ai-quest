@@ -1,5 +1,6 @@
-import { Home, ClipboardCheck, MessageCircle, BarChart3, User, History, Sparkles } from "lucide-react";
+import { Home, ClipboardCheck, MessageCircle, BarChart3, User, History } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import logo from "../../../public/logo.png";
 
 const links = [
   { icon: Home, label: "홈", to: "/dashboard" },
