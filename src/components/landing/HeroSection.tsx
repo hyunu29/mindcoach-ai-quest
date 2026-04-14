@@ -28,18 +28,26 @@ export default function HeroSection() {
       </div>
 
       <div className="container relative z-10 px-6 pt-24 pb-32" ref={ref}>
-        <div className="max-w-2xl mx-auto text-center md:text-left md:mx-0">
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.15] mb-6">
-            수험생의 마음을 지키는
-            <br />
-            AI 심리 코치
+        <div className="max-w-3xl mx-auto text-center">
+          {/* Top Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 mb-8">
+            <span className="text-sm font-medium text-white/90">대한민국 수험생 대표 심리코칭</span>
+          </div>
+
+          {/* Main Headline */}
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight">
+            마인드코치
           </h1>
-          <p className="text-white/80 text-base md:text-lg mb-10 max-w-lg leading-relaxed">
-            20년 경력 수험생 심리 전문가의 노하우를
-            <br className="hidden md:block" />
-            AI로 만나보세요.
+
+          {/* Sub Headline */}
+          <p className="text-white/80 text-lg md:text-xl mb-10 leading-relaxed whitespace-pre-line">
+            수험생들의 불안을 걷어내고{"\n"}
+            스스로를 돕는 방법을 주는{"\n"}
+            AI 기반 수험생 전문 멘탈코칭
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               onClick={handleStart}
               size="xl"
