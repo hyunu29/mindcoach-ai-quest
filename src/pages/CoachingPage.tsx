@@ -405,6 +405,21 @@ export default function CoachingPage() {
             <div className="font-bold text-sm">마인드코치</div>
             <div className="text-[10px] text-muted-foreground">AI 심리 코칭</div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowUpgradeModal(true)}
+            className={`ml-auto inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition-colors ${
+              credits.remaining === 0
+                ? "bg-red-100 text-red-700 border-red-200"
+                : credits.remaining <= 5
+                ? "bg-amber-100 text-amber-700 border-amber-200"
+                : "bg-primary/10 text-primary border-primary/20"
+            }`}
+            title="AI 코칭 크레딧"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AI 크레딧 {credits.remaining} / {credits.granted}</span>
+          </button>
         </div>
 
         {active?.related_syndrome && (
