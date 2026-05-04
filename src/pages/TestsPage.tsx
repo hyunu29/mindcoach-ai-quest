@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClipboardCheck, ChevronRight, Clock, Sparkles } from "lucide-react";
+import { ClipboardCheck, ChevronRight, Clock, Sparkles, Compass } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +16,9 @@ interface TestRow {
   duration_minutes: number;
   is_recommended: boolean;
   is_coming_soon: boolean;
+  is_integrated?: boolean;
+  is_free?: boolean;
+  price_krw?: number;
   subdomains: string[];
   questions: unknown[];
 }
@@ -33,6 +36,7 @@ export default function TestsPage() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("all");
   const [tests, setTests] = useState<TestRow[]>([]);
+  const [integratedTest, setIntegratedTest] = useState<TestRow | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,7 +58,10 @@ export default function TestsPage() {
 
     const { data, error } = await query;
     if (!error && data) {
-      setTests(data as unknown as TestRow[]);
+      const rows = data as unknown as TestRow[];
+      const integrated = rows.find((t) => t.is_integrated) ?? null;
+      setIntegratedTest(integrated);
+      setTests(rows.filter((t) => !t.is_integrated));
     }
     setLoading(false);
   };
@@ -65,6 +72,43 @@ export default function TestsPage() {
         <h1 className="text-2xl font-bold">심리검사 목록</h1>
         <p className="text-sm text-muted-foreground mt-1">나에게 맞는 검사를 선택해 보세요.</p>
       </div>
+
+      {/* 통합검사 게이트웨이 배너 */}
+      {integratedTest && (
+        <Card
+          className="p-5 rounded-2xl border-0 gradient-primary text-primary-foreground shadow-md cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-[0.99]"
+          onClick={() => navigate(`/tests/${integratedTest.id}`)}
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Compass className="w-6 h-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Badge className="bg-white/25 text-primary-foreground text-[10px] px-2 py-0.5 border-0 gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  무료 · 먼저 시작
+                </Badge>
+              </div>
+              <h3 className="font-bold text-base">{integratedTest.name}</h3>
+              <p className="text-xs opacity-90 leading-relaxed mt-1 line-clamp-2">
+                10가지 심리 영역을 한 번에 점검하고, 나에게 필요한 후속 검사를 추천받으세요.
+              </p>
+              <div className="flex items-center gap-3 text-[11px] opacity-90 mt-2">
+                <span className="flex items-center gap-1">
+                  <ClipboardCheck className="w-3 h-3" />
+                  {integratedTest.question_count}문항
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  약 {integratedTest.duration_minutes}분
+                </span>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 shrink-0 mt-1" />
+          </div>
+        </Card>
+      )}
 
       {/* Category filter tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">

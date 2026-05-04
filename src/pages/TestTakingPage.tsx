@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { getRiskLevel } from "@/data/seed-data";
+import { scoreIntegratedTest } from "@/lib/integrated-test-scoring";
 import { toast } from "sonner";
 
 const likertOptions = [
@@ -34,6 +35,7 @@ interface TestData {
   duration_minutes: number;
   is_recommended: boolean;
   is_coming_soon: boolean;
+  is_integrated?: boolean;
   subdomains: string[];
   questions: QuestionItem[];
 }
@@ -113,26 +115,43 @@ export default function TestTakingPage() {
     setSubmitting(true);
 
     try {
-      // Build subdomain scores
-      const subdomainMap: Record<string, { total: number; count: number }> = {};
-      questions.forEach((q, i) => {
-        const raw = answers[i] || 3;
-        const score = q.isReversed ? (6 - raw) : raw;
-        if (!subdomainMap[q.subdomain]) {
-          subdomainMap[q.subdomain] = { total: 0, count: 0 };
+      let subdomainScores: Record<string, number> = {};
+      let totalScore = 0;
+      let riskLevel: "safe" | "caution" | "warning" | "danger" = "safe";
+      let riskLabel = "양호";
+      let recommendations: unknown = null;
+
+      if (test.is_integrated) {
+        // 통합검사 (게이트웨이): 영역별 25점 만점, ≥15점이면 후속검사 추천
+        const answersArray50 = questions.map((_, i) => answers[i] ?? 3);
+        const result = scoreIntegratedTest(answersArray50);
+        subdomainScores = result.subdomainScores;
+        totalScore = result.totalScore;
+        riskLevel = result.riskLevel;
+        riskLabel = result.riskLabel;
+        recommendations = result.recommendations;
+      } else {
+        // 일반 전문검사: 20문항 / 100점 만점 기준 위험도
+        const subdomainMap: Record<string, { total: number; count: number }> = {};
+        questions.forEach((q, i) => {
+          const raw = answers[i] || 3;
+          const score = q.isReversed ? (6 - raw) : raw;
+          if (!subdomainMap[q.subdomain]) {
+            subdomainMap[q.subdomain] = { total: 0, count: 0 };
+          }
+          subdomainMap[q.subdomain].total += score;
+          subdomainMap[q.subdomain].count += 1;
+        });
+
+        for (const [key, val] of Object.entries(subdomainMap)) {
+          subdomainScores[key] = val.total;
         }
-        subdomainMap[q.subdomain].total += score;
-        subdomainMap[q.subdomain].count += 1;
-      });
 
-      const subdomainScores: Record<string, number> = {};
-      for (const [key, val] of Object.entries(subdomainMap)) {
-        subdomainScores[key] = val.total;
+        totalScore = Object.values(subdomainScores).reduce((a, b) => a + b, 0);
+        const risk = getRiskLevel(totalScore);
+        riskLevel = totalScore <= 40 ? "safe" : totalScore <= 60 ? "caution" : totalScore <= 80 ? "warning" : "danger";
+        riskLabel = risk.level;
       }
-
-      const totalScore = Object.values(subdomainScores).reduce((a, b) => a + b, 0);
-      const risk = getRiskLevel(totalScore);
-      const riskLevel = totalScore <= 40 ? "safe" : totalScore <= 60 ? "caution" : totalScore <= 80 ? "warning" : "danger";
 
       const answersArray = questions.map((_, i) => ({
         questionId: i + 1,
@@ -147,8 +166,9 @@ export default function TestTakingPage() {
         subdomain_scores: subdomainScores as any,
         total_score: totalScore,
         risk_level: riskLevel,
-        risk_label: risk.level,
+        risk_label: riskLabel,
         matched_syndrome: test.related_syndrome || null,
+        recommendations: recommendations as any,
       };
 
       if (user) {
