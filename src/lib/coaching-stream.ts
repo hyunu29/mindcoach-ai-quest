@@ -1,13 +1,6 @@
 import { ChatMessage } from "./coaching-types";
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ||
-  "https://bnhnaaarsyauppdbrbco.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuaG5hYWFyc3lhdXBwZGJyYmNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc5NzMsImV4cCI6MjA4OTc2Mzk3M30.Cbd6nbPGuOMHfZ7oHDTmAhMgx_luVxh1gDyFO4UqfYM";
-
-const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-coaching`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-coaching`;
 
 interface StreamChatParams {
   messages: ChatMessage[];
@@ -38,7 +31,7 @@ export async function streamCoachingChat({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
     body: JSON.stringify({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),

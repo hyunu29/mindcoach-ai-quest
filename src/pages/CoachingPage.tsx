@@ -544,13 +544,7 @@ export default function CoachingPage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={active ? "메시지를 입력하세요..." : "새 대화를 시작해주세요"}
               className="rounded-xl border-border/50"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleSend();
-                }
-              }}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSend()}
               disabled={isTyping || !active}
             />
             <Button size="icon" className="rounded-xl shrink-0 gradient-primary" onClick={handleSend} disabled={isTyping || !input.trim() || !active}>
