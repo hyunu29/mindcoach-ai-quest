@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Send, Plus, MessageSquare, Phone, Menu, X, Brain, MessageCircleHeart, Loader2, CheckCircle2, ClipboardCheck,
+  Send, Plus, MessageSquare, Phone, Menu, X, Brain, MessageCircleHeart, Loader2, CheckCircle2, ClipboardCheck, Sparkles,
 } from "lucide-react";
 import { detectCrisisSignal, syndromes } from "@/data/seed-data";
 import {
@@ -16,6 +16,7 @@ import { streamCoachingChat } from "@/lib/coaching-stream";
 import type { ChatMessage, DbSession } from "@/lib/coaching-types";
 import { runAgentActions, type AgentDecision } from "@/services/agentEngine";
 import { getRecentEmotions, buildEmotionSummary } from "@/services/agentActions";
+import { fetchCurrentCredits, consumeAiCredit, type CreditState } from "@/lib/credits";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
@@ -37,6 +38,14 @@ export default function CoachingPage() {
 
   // Track whether emotion was already saved in this session
   const [emotionSavedInSession, setEmotionSavedInSession] = useState<Record<string, boolean>>({});
+
+  const [credits, setCredits] = useState<CreditState>({ creditId: null, remaining: 0, granted: 0 });
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const refreshCredits = useCallback(async (uid: string) => {
+    const c = await fetchCurrentCredits(uid);
+    if (c) setCredits(c);
+  }, []);
 
   const active = sessions.find((s) => s.id === activeId);
   const messages = active?.messages || [];
@@ -63,6 +72,7 @@ export default function CoachingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
+      await refreshCredits(user.id);
 
       const { data: testResults } = await supabase
         .from("test_results")
@@ -133,6 +143,15 @@ export default function CoachingPage() {
   }, []);
 
   const generateFirstMessage = async (sessionId: string, syndrome: string | null, existingMsgs: ChatMessage[]) => {
+    if (!userId) return;
+    const consume = await consumeAiCredit(1);
+    if (!consume.success) {
+      setShowUpgradeModal(true);
+      toast({ title: "크레딧 부족으로 자동 인사를 생략했습니다", variant: "destructive" });
+      return;
+    }
+    const usedCreditId = consume.creditId;
+    setCredits((prev) => ({ ...prev, creditId: usedCreditId ?? prev.creditId, remaining: consume.remaining }));
     setIsTyping(true);
     let aiContent = "";
     const syndromeCtx = getSyndromeContext(syndrome);
@@ -151,9 +170,20 @@ export default function CoachingPage() {
         setIsTyping(false);
         const finalMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
         await supabase.from("coaching_sessions").update({ messages: [finalMsg] as any, updated_at: new Date().toISOString() }).eq("id", sessionId);
+        await supabase.from("ai_usage_log").insert({
+          user_id: userId,
+          session_id: sessionId,
+          credit_id: usedCreditId,
+          cost: 1,
+          tokens_in: null,
+          tokens_out: null,
+          model: "gemini-3-flash",
+        });
+        await refreshCredits(userId);
       },
       onError: (err) => {
         setIsTyping(false);
+        // TODO: refund credit on stream error
         const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 마인드코치 AI입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
         setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s));
         toast({ title: "AI 연결 오류", description: err, variant: "destructive" });
@@ -163,6 +193,20 @@ export default function CoachingPage() {
 
   const handleSend = async () => {
     if (!input.trim() || isTyping || !active || !userId || !activeId) return;
+
+    if (credits.remaining <= 0) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    const consume = await consumeAiCredit(1);
+    if (!consume.success) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    const usedCreditId = consume.creditId;
+    setCredits((prev) => ({ ...prev, creditId: usedCreditId ?? prev.creditId, remaining: consume.remaining }));
+
     const text = input.trim();
 
     const crisis = detectCrisisSignal(text);
@@ -244,9 +288,20 @@ export default function CoachingPage() {
         const finalMsgs = [...updatedMsgs, aiMsg];
         setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages: finalMsgs } : s));
         await supabase.from("coaching_sessions").update({ messages: finalMsgs as any, updated_at: new Date().toISOString() }).eq("id", currentSessionId);
+        await supabase.from("ai_usage_log").insert({
+          user_id: userId,
+          session_id: currentSessionId,
+          credit_id: usedCreditId,
+          cost: 1,
+          tokens_in: null,
+          tokens_out: null,
+          model: "gemini-3-flash",
+        });
+        await refreshCredits(userId);
       },
       onError: (err) => {
         setIsTyping(false);
+        // TODO: refund credit on stream error
         const fallbackMsg: ChatMessage = { role: "ai", content: "죄송합니다, 일시적으로 응답을 생성하지 못했어요. 다시 시도해 주세요. 🙏", timestamp: new Date().toISOString() };
         const finalMsgs = [...updatedMsgs, fallbackMsg];
         setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages: finalMsgs } : s));
@@ -350,6 +405,21 @@ export default function CoachingPage() {
             <div className="font-bold text-sm">마인드코치</div>
             <div className="text-[10px] text-muted-foreground">AI 심리 코칭</div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowUpgradeModal(true)}
+            className={`ml-auto inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition-colors ${
+              credits.remaining === 0
+                ? "bg-red-100 text-red-700 border-red-200"
+                : credits.remaining <= 5
+                ? "bg-amber-100 text-amber-700 border-amber-200"
+                : "bg-primary/10 text-primary border-primary/20"
+            }`}
+            title="AI 코칭 크레딧"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AI 크레딧 {credits.remaining} / {credits.granted}</span>
+          </button>
         </div>
 
         {active?.related_syndrome && (
@@ -505,6 +575,32 @@ export default function CoachingPage() {
                 <Phone className="w-4 h-4" /> 정신건강위기상담 1577-0199
               </a>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade modal */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="rounded-2xl max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg">크레딧이 부족해요</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              AI 코칭 크레딧을 모두 사용했습니다. Pro 플랜으로 업그레이드하면 매월 200 크레딧을 받을 수 있어요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 mt-2">
+            <Button
+              className="rounded-xl gradient-primary text-primary-foreground"
+              onClick={() => {
+                setShowUpgradeModal(false);
+                toast({ title: "곧 출시 예정", description: "Pro 플랜은 준비 중입니다." });
+              }}
+            >
+              Pro 플랜 보기
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={() => setShowUpgradeModal(false)}>
+              닫기
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
