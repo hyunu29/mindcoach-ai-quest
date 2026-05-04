@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_log: {
+        Row: {
+          cost: number
+          created_at: string
+          credit_id: string | null
+          id: string
+          model: string | null
+          session_id: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          credit_id?: string | null
+          id?: string
+          model?: string | null
+          session_id?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          credit_id?: string | null
+          id?: string
+          model?: string | null
+          session_id?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_log_credit_id_fkey"
+            columns: ["credit_id"]
+            isOneToOne: false
+            referencedRelation: "user_credits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "coaching_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coaching_sessions: {
         Row: {
           created_at: string
@@ -165,6 +216,66 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_records: {
+        Row: {
+          amount_krw: number
+          created_at: string
+          id: string
+          metadata: Json
+          related_subscription_id: string | null
+          related_test_id: string | null
+          status: string
+          toss_order_id: string | null
+          toss_payment_key: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_krw: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          related_subscription_id?: string | null
+          related_test_id?: string | null
+          status: string
+          toss_order_id?: string | null
+          toss_payment_key?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_krw?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          related_subscription_id?: string | null
+          related_test_id?: string | null
+          status?: string
+          toss_order_id?: string | null
+          toss_payment_key?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_records_related_subscription_id_fkey"
+            columns: ["related_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_records_related_test_id_fkey"
+            columns: ["related_test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -192,12 +303,87 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_plans: {
+        Row: {
+          ai_credits_monthly: number
+          code: string
+          created_at: string
+          features: Json
+          id: string
+          is_active: boolean
+          name: string
+          price_krw: number
+          weekly_free_tests: number
+        }
+        Insert: {
+          ai_credits_monthly?: number
+          code: string
+          created_at?: string
+          features?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          price_krw?: number
+          weekly_free_tests?: number
+        }
+        Update: {
+          ai_credits_monthly?: number
+          code?: string
+          created_at?: string
+          features?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_krw?: number
+          weekly_free_tests?: number
+        }
+        Relationships: []
+      }
+      test_entitlements: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          source: string
+          test_id: string | null
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          source: string
+          test_id?: string | null
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          source?: string
+          test_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_entitlements_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_results: {
         Row: {
           answers: Json
           created_at: string
           id: string
           matched_syndrome: string | null
+          recommendations: Json | null
           risk_label: string
           risk_level: string
           subdomain_scores: Json
@@ -210,6 +396,7 @@ export type Database = {
           created_at?: string
           id?: string
           matched_syndrome?: string | null
+          recommendations?: Json | null
           risk_label?: string
           risk_level?: string
           subdomain_scores?: Json
@@ -222,6 +409,7 @@ export type Database = {
           created_at?: string
           id?: string
           matched_syndrome?: string | null
+          recommendations?: Json | null
           risk_label?: string
           risk_level?: string
           subdomain_scores?: Json
@@ -247,8 +435,11 @@ export type Database = {
           duration_minutes: number
           id: string
           is_coming_soon: boolean
+          is_free: boolean
+          is_integrated: boolean
           is_recommended: boolean
           name: string
+          price_krw: number
           question_count: number
           questions: Json
           related_syndrome: string
@@ -261,8 +452,11 @@ export type Database = {
           duration_minutes?: number
           id: string
           is_coming_soon?: boolean
+          is_free?: boolean
+          is_integrated?: boolean
           is_recommended?: boolean
           name: string
+          price_krw?: number
           question_count?: number
           questions?: Json
           related_syndrome?: string
@@ -275,8 +469,11 @@ export type Database = {
           duration_minutes?: number
           id?: string
           is_coming_soon?: boolean
+          is_free?: boolean
+          is_integrated?: boolean
           is_recommended?: boolean
           name?: string
+          price_krw?: number
           question_count?: number
           questions?: Json
           related_syndrome?: string
@@ -284,12 +481,99 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          created_at: string
+          credits_granted: number
+          credits_used: number
+          id: string
+          period_end: string
+          period_start: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_granted: number
+          credits_used?: number
+          id?: string
+          period_end: string
+          period_start: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_granted?: number
+          credits_used?: number
+          id?: string
+          period_end?: string
+          period_start?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_id: string
+          status: string
+          toss_billing_key: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end: string
+          current_period_start?: string
+          id?: string
+          plan_id: string
+          status: string
+          toss_billing_key?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          status?: string
+          toss_billing_key?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      consume_ai_credit: {
+        Args: { p_cost?: number }
+        Returns: {
+          credit_id: string
+          remaining: number
+          success: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
