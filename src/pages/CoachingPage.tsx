@@ -143,6 +143,15 @@ export default function CoachingPage() {
   }, []);
 
   const generateFirstMessage = async (sessionId: string, syndrome: string | null, existingMsgs: ChatMessage[]) => {
+    if (!userId) return;
+    const consume = await consumeAiCredit(1);
+    if (!consume.success) {
+      setShowUpgradeModal(true);
+      toast({ title: "크레딧 부족으로 자동 인사를 생략했습니다", variant: "destructive" });
+      return;
+    }
+    const usedCreditId = consume.creditId;
+    setCredits((prev) => ({ ...prev, creditId: usedCreditId ?? prev.creditId, remaining: consume.remaining }));
     setIsTyping(true);
     let aiContent = "";
     const syndromeCtx = getSyndromeContext(syndrome);
@@ -161,9 +170,20 @@ export default function CoachingPage() {
         setIsTyping(false);
         const finalMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
         await supabase.from("coaching_sessions").update({ messages: [finalMsg] as any, updated_at: new Date().toISOString() }).eq("id", sessionId);
+        await supabase.from("ai_usage_log").insert({
+          user_id: userId,
+          session_id: sessionId,
+          credit_id: usedCreditId,
+          cost: 1,
+          tokens_in: null,
+          tokens_out: null,
+          model: "gemini-3-flash",
+        });
+        await refreshCredits(userId);
       },
       onError: (err) => {
         setIsTyping(false);
+        // TODO: refund credit on stream error
         const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 마인드코치 AI입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
         setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s));
         toast({ title: "AI 연결 오류", description: err, variant: "destructive" });
@@ -173,6 +193,20 @@ export default function CoachingPage() {
 
   const handleSend = async () => {
     if (!input.trim() || isTyping || !active || !userId || !activeId) return;
+
+    if (credits.remaining <= 0) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    const consume = await consumeAiCredit(1);
+    if (!consume.success) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    const usedCreditId = consume.creditId;
+    setCredits((prev) => ({ ...prev, creditId: usedCreditId ?? prev.creditId, remaining: consume.remaining }));
+
     const text = input.trim();
 
     const crisis = detectCrisisSignal(text);
@@ -254,9 +288,20 @@ export default function CoachingPage() {
         const finalMsgs = [...updatedMsgs, aiMsg];
         setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages: finalMsgs } : s));
         await supabase.from("coaching_sessions").update({ messages: finalMsgs as any, updated_at: new Date().toISOString() }).eq("id", currentSessionId);
+        await supabase.from("ai_usage_log").insert({
+          user_id: userId,
+          session_id: currentSessionId,
+          credit_id: usedCreditId,
+          cost: 1,
+          tokens_in: null,
+          tokens_out: null,
+          model: "gemini-3-flash",
+        });
+        await refreshCredits(userId);
       },
       onError: (err) => {
         setIsTyping(false);
+        // TODO: refund credit on stream error
         const fallbackMsg: ChatMessage = { role: "ai", content: "죄송합니다, 일시적으로 응답을 생성하지 못했어요. 다시 시도해 주세요. 🙏", timestamp: new Date().toISOString() };
         const finalMsgs = [...updatedMsgs, fallbackMsg];
         setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages: finalMsgs } : s));
