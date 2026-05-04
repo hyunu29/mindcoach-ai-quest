@@ -116,7 +116,7 @@ export default function ResultsPage() {
 
       if (!error && data) {
         const testData = data.tests as any;
-        const recs = (data.recommendations as DomainRecommendation[] | null) || null;
+        const recs = (data.recommendations as unknown as DomainRecommendation[] | null) || null;
         setResult({
           testName: testData?.name || "심리검사",
           subdomains: (testData?.subdomains as string[]) || Object.keys((data.subdomain_scores as Record<string, number>) || {}),
