@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Send, Plus, MessageSquare, Phone, Menu, X, Brain, MessageCircleHeart, Loader2, CheckCircle2, ClipboardCheck,
+  Send, Plus, MessageSquare, Phone, Menu, X, Brain, MessageCircleHeart, Loader2, CheckCircle2, ClipboardCheck, Sparkles,
 } from "lucide-react";
 import { detectCrisisSignal, syndromes } from "@/data/seed-data";
 import {
@@ -16,6 +16,7 @@ import { streamCoachingChat } from "@/lib/coaching-stream";
 import type { ChatMessage, DbSession } from "@/lib/coaching-types";
 import { runAgentActions, type AgentDecision } from "@/services/agentEngine";
 import { getRecentEmotions, buildEmotionSummary } from "@/services/agentActions";
+import { fetchCurrentCredits, consumeAiCredit, type CreditState } from "@/lib/credits";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
@@ -37,6 +38,14 @@ export default function CoachingPage() {
 
   // Track whether emotion was already saved in this session
   const [emotionSavedInSession, setEmotionSavedInSession] = useState<Record<string, boolean>>({});
+
+  const [credits, setCredits] = useState<CreditState>({ creditId: null, remaining: 0, granted: 0 });
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const refreshCredits = useCallback(async (uid: string) => {
+    const c = await fetchCurrentCredits(uid);
+    if (c) setCredits(c);
+  }, []);
 
   const active = sessions.find((s) => s.id === activeId);
   const messages = active?.messages || [];
@@ -63,6 +72,7 @@ export default function CoachingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
+      await refreshCredits(user.id);
 
       const { data: testResults } = await supabase
         .from("test_results")
