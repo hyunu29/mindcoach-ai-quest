@@ -578,6 +578,32 @@ export default function CoachingPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Upgrade modal */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="rounded-2xl max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg">크레딧이 부족해요</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              AI 코칭 크레딧을 모두 사용했습니다. Pro 플랜으로 업그레이드하면 매월 200 크레딧을 받을 수 있어요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 mt-2">
+            <Button
+              className="rounded-xl gradient-primary text-primary-foreground"
+              onClick={() => {
+                setShowUpgradeModal(false);
+                toast({ title: "곧 출시 예정", description: "Pro 플랜은 준비 중입니다." });
+              }}
+            >
+              Pro 플랜 보기
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={() => setShowUpgradeModal(false)}>
+              닫기
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
