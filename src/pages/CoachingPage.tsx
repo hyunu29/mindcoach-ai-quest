@@ -581,7 +581,10 @@ export default function CoachingPage() {
 
       {/* Upgrade modal */}
       <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-        <DialogContent className="rounded-2xl max-w-sm">
+        <DialogContent
+          className="rounded-2xl max-w-sm"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="text-lg">크레딧이 부족해요</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
