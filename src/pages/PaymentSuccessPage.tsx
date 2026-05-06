@@ -1,54 +1,114 @@
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-// TODO(5-2b): call verify-payment Edge Function here
+type State = "verifying" | "success" | "failed";
+
 export default function PaymentSuccessPage() {
-  const [params] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const orderId = params.get("orderId") ?? "";
-  const paymentKey = params.get("paymentKey") ?? "";
-  const amount = params.get("amount") ?? "";
+  const [state, setState] = useState<State>("verifying");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [productInfo, setProductInfo] = useState<{ productType: string; productId: string } | null>(null);
+
+  const orderId = searchParams.get("orderId") ?? "";
+
+  useEffect(() => {
+    const run = async () => {
+      const paymentKey = searchParams.get("paymentKey");
+      const amount = searchParams.get("amount");
+      if (!orderId || !paymentKey || !amount) {
+        setState("failed");
+        setErrorMsg("필수 파라미터 누락");
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("verify-payment", {
+        body: { orderId, paymentKey, amount: Number(amount) },
+      });
+      if (error || !data) {
+        setState("failed");
+        setErrorMsg(error?.message ?? "검증 실패");
+        return;
+      }
+      if (data.status === "completed" || data.status === "already_completed") {
+        setProductInfo({ productType: data.productType, productId: data.productId });
+        setState("success");
+      } else {
+        setState("failed");
+        setErrorMsg(data.error ?? data.code ?? "알 수 없는 상태");
+      }
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md rounded-2xl">
         <CardHeader className="items-center text-center">
-          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-            <CheckCircle2 className="w-8 h-8 text-primary" />
-          </div>
-          <CardTitle>결제 완료</CardTitle>
+          {state === "verifying" && (
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-2">
+              <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+            </div>
+          )}
+          {state === "success" && (
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
+            </div>
+          )}
+          {state === "failed" && (
+            <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
+              <XCircle className="w-8 h-8 text-destructive" />
+            </div>
+          )}
+          <CardTitle>
+            {state === "verifying" && "결제를 확인하고 있어요..."}
+            {state === "success" && "결제 완료!"}
+            {state === "failed" && "결제 검증 실패"}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="rounded-xl border bg-card p-4 space-y-2 text-sm">
-            <div className="flex justify-between">
+          {orderId && (
+            <div className="rounded-xl border bg-card p-3 text-xs flex justify-between">
               <span className="text-muted-foreground">주문번호</span>
-              <span className="font-mono text-xs truncate ml-2">{orderId}</span>
+              <span className="font-mono truncate ml-2">{orderId}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">결제키</span>
-              <span className="font-mono text-xs truncate ml-2">{paymentKey}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">금액</span>
-              <span className="font-bold">{Number(amount).toLocaleString()}원</span>
-            </div>
-          </div>
+          )}
 
-          <p className="text-sm text-muted-foreground text-center">
-            검증 중... (5-2b 단계에서 서버 검증 추가 예정)
-          </p>
+          {state === "success" && (
+            <>
+              <p className="text-sm text-muted-foreground text-center">
+                검사를 시작할 수 있어요.
+              </p>
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() =>
+                  productInfo
+                    ? navigate(`/tests/${productInfo.productId}`)
+                    : navigate("/tests")
+                }
+              >
+                검사 시작하기
+              </Button>
+            </>
+          )}
 
-          <Button
-            disabled
-            className="w-full"
-            size="lg"
-            onClick={() => navigate("/tests")}
-          >
-            검사 받으러 가기
-          </Button>
+          {state === "failed" && (
+            <>
+              <p className="text-sm text-destructive text-center">{errorMsg}</p>
+              <p className="text-xs text-muted-foreground text-center">
+                문제가 지속되면 고객센터로 문의해주세요.
+              </p>
+              <Button variant="outline" className="w-full" onClick={() => navigate("/tests")}>
+                검사 목록으로
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
