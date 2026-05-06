@@ -18,13 +18,15 @@ function getSessionId(): string {
 export async function track(eventName: string, props: Record<string, unknown> = {}) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    void supabase.from('analytics_events').insert({
-      user_id: user?.id ?? null,
+    const row: Record<string, unknown> = {
       session_id: getSessionId(),
       event_name: eventName,
       event_props: props,
       page_path: typeof window !== 'undefined' ? window.location.pathname : null,
-    });
+    };
+    if (user?.id) row.user_id = user.id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase.from('analytics_events') as any).insert(row);
   } catch (e) {
     console.warn('[analytics] failed', eventName, e);
   }
