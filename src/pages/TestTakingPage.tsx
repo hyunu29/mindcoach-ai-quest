@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Clock, ArrowLeft, Loader2 } from "lucide-rea
 import { getRiskLevel } from "@/data/seed-data";
 import { scoreIntegratedTest } from "@/lib/integrated-test-scoring";
 import { toast } from "sonner";
+import { TestAccessGate } from "@/components/payment/TestAccessGate";
 
 const likertOptions = [
   { score: 1, label: "전혀 그렇지 않다" },
@@ -230,6 +231,7 @@ export default function TestTakingPage() {
   }
 
   return (
+    <TestAccessGate testSlug={test.id} testName={test.name}>
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -315,5 +317,6 @@ export default function TestTakingPage() {
         )}
       </div>
     </div>
+    </TestAccessGate>
   );
 }
