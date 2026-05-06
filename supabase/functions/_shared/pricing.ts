@@ -11,7 +11,6 @@ export interface ProductCatalogEntry {
 const TEST_IDS: Array<{ id: string; name: string }> = [
   { id: 'A', name: 'FOMO 증후군 검사' },
   { id: 'A-1', name: '루틴 강박 증후군 검사' },
-  { id: 'A-2', name: '번아웃 증후군 검사' },
   { id: 'A-3', name: '성취중독 증후군 검사' },
   { id: 'A-4', name: '실패공포 증후군 검사' },
   { id: 'A-5', name: '자기비하 증후군 검사' },
@@ -30,7 +29,6 @@ const TEST_IDS: Array<{ id: string; name: string }> = [
   { id: 'C-4', name: '완벽주의 증후군 검사' },
   { id: 'C-5', name: '정보과부하 증후군 검사' },
   { id: 'D', name: '낮은 자기효능감 증후군 검사' },
-  { id: 'D-1', name: '미루기 증후군 검사' },
   { id: 'D-2', name: '사회적 위축 증후군 검사' },
   { id: 'D-3', name: '시간 강박 증후군 검사' },
   { id: 'D-4', name: '우울 증후군 검사' },
@@ -38,7 +36,6 @@ const TEST_IDS: Array<{ id: string; name: string }> = [
   { id: 'E', name: '두통·편두통 증후군 검사' },
   { id: 'E-1', name: '백지 증후군 검사' },
   { id: 'E-2', name: '성취불안 증후군 검사' },
-  { id: 'E-3', name: '시험불안 증후군 검사' },
   { id: 'E-4', name: '위장관 증후군 검사' },
   { id: 'E-5', name: '집중력 결핍 증후군 검사' },
   // 별칭 슬러그 (BM 측 명명) — 임시
