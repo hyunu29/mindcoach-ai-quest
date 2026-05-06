@@ -88,7 +88,7 @@ export default function PaymentSuccessPage() {
                 className="w-full"
                 size="lg"
                 onClick={() =>
-                  productInfo
+                  productInfo && productInfo.productType === "single_test"
                     ? navigate(`/tests/${productInfo.productId}`)
                     : navigate("/tests")
                 }

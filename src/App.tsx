@@ -20,6 +20,7 @@ import ProfilePage from "./pages/ProfilePage";
 import MockCheckoutPage from "./pages/MockCheckoutPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailPage from "./pages/PaymentFailPage";
+import PricingPage from "./pages/PricingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/tests" element={<TestsPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
               <Route path="/tests/:id" element={<ProtectedRoute><TestTakingPage /></ProtectedRoute>} />
               <Route path="/results/:id" element={<ResultsPage />} />
               <Route path="/coaching" element={<ProtectedRoute><CoachingPage /></ProtectedRoute>} />
