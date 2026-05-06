@@ -1,7 +1,9 @@
 // 무료 검사 슬러그 목록 (게이트 우회 대상)
 export const FREE_TEST_SLUGS = new Set<string>([
   'INT', // 통합검사 (게이트웨이) — 영구 무료
-  // TODO: 무료공개 3개 검사 선정 후 추가 (Tier 1 데이터 확정 후)
+  'E-3', // 시험불안 증후군 검사 — 무료 진입점
+  'A-2', // 번아웃 증후군 검사 — 무료 진입점
+  'D-1', // 미루기 증후군 검사 — 무료 진입점
 ]);
 
 export function isFreeTest(testSlug: string): boolean {
