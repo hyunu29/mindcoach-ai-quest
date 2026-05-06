@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipboardCheck, ChevronRight, Clock, Sparkles, Compass } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getPaymentProvider } from "@/lib/payments";
 
 interface TestRow {
   id: string;
@@ -72,6 +74,24 @@ export default function TestsPage() {
         <h1 className="text-2xl font-bold">심리검사 목록</h1>
         <p className="text-sm text-muted-foreground mt-1">나에게 맞는 검사를 선택해 보세요.</p>
       </div>
+
+      {/* TODO: remove after 5-3 */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          const provider = getPaymentProvider();
+          provider.requestPayment({
+            orderId: `order_${crypto.randomUUID()}`,
+            amount: 2900,
+            productType: "single_test",
+            productId: "comparison-anxiety",
+            productName: "비교불안 검사 (테스트)",
+          });
+        }}
+      >
+        [DEV] Mock 결제 테스트
+      </Button>
 
       {/* 통합검사 게이트웨이 배너 */}
       {integratedTest && (
