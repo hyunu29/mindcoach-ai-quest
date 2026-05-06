@@ -3,6 +3,7 @@ import { getPaymentProvider } from '@/lib/payments';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { track } from '@/lib/analytics';
 
 interface PurchaseArgs {
   productType: 'single_test' | 'pro_subscription';
@@ -24,6 +25,7 @@ export function usePurchase() {
     }
     setLoadingId(args.productId);
     try {
+      void track('purchase_clicked', { product_type: args.productType, product_id: args.productId });
       const provider = getPaymentProvider();
       await provider.requestPayment({
         orderId: '',

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 
 type State = "verifying" | "success" | "failed";
 
@@ -37,6 +38,14 @@ export default function PaymentSuccessPage() {
       if (data.status === "completed" || data.status === "already_completed") {
         setProductInfo({ productType: data.productType, productId: data.productId });
         setState("success");
+        if (data.status === "completed") {
+          void track('payment_completed', {
+            product_type: data.productType,
+            product_id: data.productId,
+            order_id: orderId,
+            amount: Number(amount),
+          });
+        }
       } else {
         setState("failed");
         setErrorMsg(data.error ?? data.code ?? "알 수 없는 상태");

@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Lock, Clock, UserCircle2, ArrowRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePurchase } from '@/hooks/usePurchase';
 import type { AccessReason } from '@/hooks/useTestAccessCheck';
+import { track } from '@/lib/analytics';
 
 interface TestPaywallProps {
   testSlug: string;
@@ -18,6 +20,10 @@ export function TestPaywall({ testSlug, testName, reason, expiresAt }: TestPaywa
   const navigate = useNavigate();
   const location = useLocation();
   const { purchase, loadingId } = usePurchase();
+
+  useEffect(() => {
+    void track('paywall_viewed', { test_id: testSlug, reason });
+  }, [testSlug, reason]);
 
   const handlePurchase = () => {
     purchase({ productType: 'single_test', productId: testSlug, productName: testName });

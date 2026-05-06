@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { SINGLE_TEST_DISPLAY, PRO_PLAN_DISPLAY } from "@/lib/payments/catalog-display";
 import { usePurchase } from "@/hooks/usePurchase";
 import { useUserTestAccess } from "@/hooks/useUserTestAccess";
+import { track } from "@/lib/analytics";
 
 const CATEGORY_FILTERS = [
   { id: "all", label: "전체" },
@@ -23,6 +24,10 @@ export default function PricingPage() {
   const { purchase, isLoading } = usePurchase();
   const { accessMap } = useUserTestAccess();
   const [activeCategory, setActiveCategory] = useState("all");
+
+  useEffect(() => {
+    void track('pricing_viewed');
+  }, []);
 
   const filtered = useMemo(
     () =>

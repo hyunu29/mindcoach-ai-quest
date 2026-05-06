@@ -65,6 +65,36 @@ export type Database = {
           },
         ]
       }
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          event_props: Json
+          id: number
+          page_path: string | null
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          event_props?: Json
+          id?: never
+          page_path?: string | null
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          event_props?: Json
+          id?: never
+          page_path?: string | null
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       coaching_sessions: {
         Row: {
           created_at: string

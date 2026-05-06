@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { track } from "@/lib/analytics";
 
 interface AuthContextType {
   user: User | null;
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { error: error.message };
     }
+    void track('signup_completed', { method: 'email' });
     return { error: null };
   };
 

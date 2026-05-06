@@ -8,6 +8,7 @@ import { getRiskLevel } from "@/data/seed-data";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import {
   buildGatewayMessage,
   buildComplexRiskNote,
@@ -416,7 +417,15 @@ export default function ResultsPage() {
                   {rec.recommendedTestIds.map((tid) => (
                     <button
                       key={tid}
-                      onClick={() => navigate(`/tests/${tid}`)}
+                      onClick={() => {
+                        void track('recommendation_clicked', {
+                          from_test: 'integrated-test',
+                          recommended_test_id: tid,
+                          recommended_test_name: testNameById[tid] || tid,
+                          source_score: rec.score,
+                        });
+                        navigate(`/tests/${tid}`);
+                      }}
                       className="w-full flex items-center justify-between rounded-lg bg-background border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-colors p-3 text-left"
                     >
                       <span className="text-sm font-medium truncate">

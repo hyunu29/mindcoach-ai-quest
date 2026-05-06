@@ -9,6 +9,8 @@ import { getRiskLevel } from "@/data/seed-data";
 import { scoreIntegratedTest } from "@/lib/integrated-test-scoring";
 import { toast } from "sonner";
 import { TestAccessGate } from "@/components/payment/TestAccessGate";
+import { track } from "@/lib/analytics";
+import { isFreeTest } from "@/lib/payments/free-tests";
 
 const likertOptions = [
   { score: 1, label: "전혀 그렇지 않다" },
@@ -77,6 +79,14 @@ export default function TestTakingPage() {
     };
     fetchTest();
   }, [id]);
+
+  // test_started — fires once when test loaded successfully
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (!test || startedRef.current || test.is_coming_soon || (test.questions || []).length === 0) return;
+    startedRef.current = true;
+    void track('test_started', { test_id: test.id, test_name: test.name, is_free: isFreeTest(test.id) });
+  }, [test]);
 
   // Timer
   useEffect(() => {
@@ -180,6 +190,7 @@ export default function TestTakingPage() {
           .single();
 
         if (!error && insertedResult) {
+          void track('test_completed', { test_id: id, test_name: test.name, is_free: isFreeTest(id), total_score: totalScore });
           navigate(`/results/${insertedResult.id}`);
           return;
         } else {
@@ -192,6 +203,7 @@ export default function TestTakingPage() {
       } else {
         const tempResult = { ...resultPayload, testName: test.name, subdomains: test.subdomains };
         localStorage.setItem("pendingTestResult", JSON.stringify(tempResult));
+        void track('test_completed', { test_id: id, test_name: test.name, is_free: isFreeTest(id), total_score: totalScore });
         navigate(`/results/temp`, { state: tempResult });
       }
     } catch (err) {
