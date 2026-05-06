@@ -276,6 +276,60 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          failed_at: string | null
+          id: string
+          metadata: Json
+          order_id: string
+          paid_at: string | null
+          product_id: string
+          product_type: string
+          provider: string
+          provider_payment_key: string | null
+          refunded_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          failed_at?: string | null
+          id?: string
+          metadata?: Json
+          order_id: string
+          paid_at?: string | null
+          product_id: string
+          product_type: string
+          provider: string
+          provider_payment_key?: string | null
+          refunded_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          failed_at?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string
+          paid_at?: string | null
+          product_id?: string
+          product_type?: string
+          provider?: string
+          provider_payment_key?: string | null
+          refunded_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -561,6 +615,41 @@ export type Database = {
           },
         ]
       }
+      user_test_access: {
+        Row: {
+          expires_at: string
+          granted_at: string
+          id: string
+          payment_id: string | null
+          test_id: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          granted_at?: string
+          id?: string
+          payment_id?: string | null
+          test_id: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          granted_at?: string
+          id?: string
+          payment_id?: string | null
+          test_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_test_access_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -573,6 +662,10 @@ export type Database = {
           remaining: number
           success: boolean
         }[]
+      }
+      has_test_access: {
+        Args: { p_test_id: string; p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
