@@ -1,10 +1,11 @@
-import { Home, ClipboardCheck, MessageCircle, BarChart3, User, History } from "lucide-react";
+import { Home, ClipboardCheck, MessageCircle, BarChart3, User, History, Tag } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import logo from "../../../public/logo.png";
 
 const links = [
   { icon: Home, label: "홈", to: "/dashboard" },
   { icon: ClipboardCheck, label: "심리검사", to: "/tests" },
+  { icon: Tag, label: "가격", to: "/pricing" },
   { icon: MessageCircle, label: "AI 코칭", to: "/coaching" },
   { icon: BarChart3, label: "감정 트래킹", to: "/emotion" },
   { icon: History, label: "내 기록", to: "/history" },
