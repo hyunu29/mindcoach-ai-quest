@@ -16,7 +16,7 @@ export default function DesktopSidebar() {
   return (
     <aside className="hidden md:flex flex-col w-56 min-h-screen border-r border-border/50 bg-card p-4">
       <div className="flex items-center gap-2 font-bold text-lg mb-8 px-2">
-        <img src={logo} alt="마인드코치 AI" className="h-8 w-auto" />
+        <img src={logo} alt="마이치" className="h-8 w-auto" />
       </div>
       <nav className="flex flex-col gap-1">
         {links.map((link) => (

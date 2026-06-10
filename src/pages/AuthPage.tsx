@@ -27,7 +27,7 @@ export default function AuthPage() {
         <div>
           <div className="flex items-center justify-center gap-2 mb-4">
             <Sparkles className="w-6 h-6 text-primary" />
-            <span className="text-xl font-bold">마인드코치 AI</span>
+            <span className="text-xl font-bold">마이치</span>
           </div>
           <h1 className="text-2xl font-bold mb-1">시작하기</h1>
           <p className="text-sm text-muted-foreground">카카오 계정으로 1초 만에 시작하세요.</p>

@@ -1,5 +1,5 @@
 // ============================================================
-// 마인드코치 AI — Seed Data for Lovable / Supabase
+// 마이치 — Seed Data for Lovable / Supabase
 // © 마인드코치 김종환. All rights reserved.
 // ============================================================
 
@@ -2046,7 +2046,7 @@ export const coachingScenarios: Record<string, CoachingScenarioMessage[]> = {
   "burnout": [
     {
       role: "ai",
-      content: "안녕하세요! 마인드코치 AI입니다. 😊 최근 검사 결과를 보니 학업 소진(번아웃)에 해당하는 부분이 있네요. 요즘 공부하면서 가장 힘든 점이 뭔가요?"
+      content: "안녕하세요! 마이치입니다. 😊 최근 검사 결과를 보니 학업 소진(번아웃)에 해당하는 부분이 있네요. 요즘 공부하면서 가장 힘든 점이 뭔가요?"
     },
     {
       trigger: "any",
@@ -2071,7 +2071,7 @@ export const coachingScenarios: Record<string, CoachingScenarioMessage[]> = {
   "test-anxiety": [
     {
       role: "ai",
-      content: "안녕하세요! 마인드코치 AI입니다. 😊 시험불안 검사 결과를 살펴봤어요. 시험이 다가올 때 특히 어떤 점이 가장 힘드신가요?"
+      content: "안녕하세요! 마이치입니다. 😊 시험불안 검사 결과를 살펴봤어요. 시험이 다가올 때 특히 어떤 점이 가장 힘드신가요?"
     },
     {
       trigger: "any",
@@ -2096,7 +2096,7 @@ export const coachingScenarios: Record<string, CoachingScenarioMessage[]> = {
   "fomo": [
     {
       role: "ai",
-      content: "안녕하세요! 마인드코치 AI입니다. 😊 검사 결과를 보니 SNS 비교불안이 높은 편이네요. 요즘 SNS를 보면서 어떤 생각이 드시나요?"
+      content: "안녕하세요! 마이치입니다. 😊 검사 결과를 보니 SNS 비교불안이 높은 편이네요. 요즘 SNS를 보면서 어떤 생각이 드시나요?"
     },
     {
       trigger: "any",
@@ -2121,7 +2121,7 @@ export const coachingScenarios: Record<string, CoachingScenarioMessage[]> = {
   "default": [
     {
       role: "ai",
-      content: "안녕하세요! 마인드코치 AI입니다. 😊 어떤 이야기든 편하게 말씀해 주세요. 요즘 공부하면서 마음이 어떠세요?"
+      content: "안녕하세요! 마이치입니다. 😊 어떤 이야기든 편하게 말씀해 주세요. 요즘 공부하면서 마음이 어떠세요?"
     },
     {
       trigger: "any",

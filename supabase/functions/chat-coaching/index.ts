@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `당신은 "마인드코치 AI"입니다. 수험생(중·고등학생)을 위한 심리 코칭 전문 AI입니다.
+const SYSTEM_PROMPT = `당신은 "마이치"입니다. 수험생(중·고등학생)을 위한 심리 코칭 전문 AI입니다.
 
 ## 역할
 - 수험생의 학업 스트레스, 불안, 번아웃 등 심리적 어려움에 공감하고 맞춤 코칭을 제공합니다.

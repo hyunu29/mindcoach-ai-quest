@@ -36,7 +36,7 @@ export default function HeroSection() {
 
           {/* Main Headline */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight">
-            마인드코치
+            마이치
           </h1>
 
           {/* Sub Headline */}

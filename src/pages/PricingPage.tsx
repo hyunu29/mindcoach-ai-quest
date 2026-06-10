@@ -42,7 +42,7 @@ export default function PricingPage() {
       {/* Hero */}
       <header className="text-center space-y-3">
         <Badge className="gradient-primary text-primary-foreground border-0 gap-1">
-          <Sparkles className="w-3 h-3" /> 마인드코치 AI 가격
+          <Sparkles className="w-3 h-3" /> 마이치 가격
         </Badge>
         <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
           검사 + AI 코칭으로 <br className="md:hidden" /> 불안의 원인을 찾아보세요

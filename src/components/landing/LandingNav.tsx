@@ -31,7 +31,7 @@ export default function LandingNav() {
     >
       <div className="container flex items-center justify-between h-16 px-6">
         <div className="flex items-center gap-2 font-bold text-lg">
-          <img src={logo} alt="마인드코치 AI" className="h-8 w-auto" />
+          <img src={logo} alt="마이치" className="h-8 w-auto" />
         </div>
 
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/90">
