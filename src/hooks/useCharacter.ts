@@ -46,15 +46,20 @@ export function useCharacter() {
       setLoading(false);
       return;
     }
-    const { data } = await (supabase.from('profiles') as unknown as SelectChain)
-      .select('selected_breed, recommended_breed, character_changed_count')
-      .eq('id', user.id)
-      .single();
-    setState({
-      selectedBreed: (data?.selected_breed as Breed | null) ?? null,
-      recommendedBreed: (data?.recommended_breed as Breed | null) ?? null,
-      changeCount: data?.character_changed_count ?? 0,
-    });
+    try {
+      const { data } = await (supabase.from('profiles') as unknown as SelectChain)
+        .select('selected_breed, recommended_breed, character_changed_count')
+        .eq('id', user.id)
+        .single();
+      setState({
+        selectedBreed: (data?.selected_breed as Breed | null) ?? null,
+        recommendedBreed: (data?.recommended_breed as Breed | null) ?? null,
+        changeCount: data?.character_changed_count ?? 0,
+      });
+    } catch {
+      // 마이그레이션 미적용 등 컬럼 누락 시 영원한 spinner 방지.
+      // 사용자에게는 캐릭터 미선택 상태로 노출.
+    }
     setLoading(false);
   }, [user]);
 
