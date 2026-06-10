@@ -54,6 +54,73 @@ where event_name = 'recommendation_clicked'
 group by 1 order by 2 desc;
 ```
 
+## 캐릭터 funnel (추천 → 선택 → 변경 → 홈 노출)
+```sql
+select
+  count(*) filter (where event_name = 'character_recommended') as recommended,
+  count(*) filter (where event_name = 'character_selected') as selected,
+  count(*) filter (where event_name = 'character_changed') as changed,
+  count(*) filter (where event_name = 'character_viewed_home') as viewed_home
+from public.analytics_events
+where created_at >= now() - interval '30 days';
+```
+
+## 마스코트 선택 source 분포 (추천 vs 자유선택)
+```sql
+select event_props->>'source' as source,
+       count(*) as picks
+from public.analytics_events
+where event_name = 'character_selected'
+  and created_at >= now() - interval '30 days'
+group by 1 order by 2 desc;
+```
+
+## breed별 추천 vs 실제 선택률
+```sql
+with recs as (
+  select event_props->>'top_breed' as breed, count(*) as recommended
+  from public.analytics_events
+  where event_name = 'character_recommended'
+    and created_at >= now() - interval '30 days'
+  group by 1
+),
+picks as (
+  select event_props->>'breed' as breed, count(*) as selected
+  from public.analytics_events
+  where event_name = 'character_selected'
+    and event_props->>'source' = 'recommended'
+    and created_at >= now() - interval '30 days'
+  group by 1
+)
+select coalesce(r.breed, p.breed) as breed,
+       coalesce(r.recommended, 0) as recommended,
+       coalesce(p.selected, 0) as selected_from_recommendation,
+       round(coalesce(p.selected, 0)::numeric / nullif(r.recommended, 0) * 100, 2) as accept_rate_pct
+from recs r full outer join picks p on r.breed = p.breed
+order by recommended desc nulls last;
+```
+
+## 캐릭터 변경 빈도 (change_count 분포)
+```sql
+select (event_props->>'change_count')::int as change_count,
+       count(distinct user_id) as users
+from public.analytics_events
+where event_name = 'character_changed'
+  and created_at >= now() - interval '30 days'
+  and user_id is not null
+group by 1 order by 1;
+```
+
+## 트렌드별 홈 노출 분포 (감정 트렌드 점유율)
+```sql
+select event_props->>'trend' as trend,
+       count(*) as views
+from public.analytics_events
+where event_name = 'character_viewed_home'
+  and created_at >= now() - interval '30 days'
+group by 1 order by 2 desc;
+```
+
 ## 세션 → 가입 전환율
 ```sql
 with sessions as (
