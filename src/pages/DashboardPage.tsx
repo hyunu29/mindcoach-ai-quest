@@ -15,20 +15,19 @@ import type { PrimaryEmotion } from "@/lib/emotion-agent-types";
 import { track } from "@/lib/analytics";
 
 const emotionOptions = [
-  { emoji: "😊", label: "좋아요", score: 5 },
-  { emoji: "😐", label: "보통이에요", score: 4 },
-  { emoji: "😢", label: "우울해요", score: 2 },
-  { emoji: "😤", label: "짜증나요", score: 2 },
-  { emoji: "😰", label: "불안해요", score: 1 },
+  { emoji: "😊", label: "좋아요", score: 5, primary: 'happy' as PrimaryEmotion },
+  { emoji: "😐", label: "보통이에요", score: 4, primary: 'calm' as PrimaryEmotion },
+  { emoji: "😢", label: "우울해요", score: 2, primary: 'sad' as PrimaryEmotion },
+  { emoji: "😤", label: "짜증나요", score: 2, primary: 'angry' as PrimaryEmotion },
+  { emoji: "😰", label: "불안해요", score: 1, primary: 'anxious' as PrimaryEmotion },
 ];
 
-function scoreToEmotion(score: number | null): PrimaryEmotion {
-  if (score === null) return 'neutral';
-  if (score >= 5) return 'happy';
-  if (score === 4) return 'calm';
-  if (score === 3) return 'neutral';
-  if (score === 2) return 'sad';
-  return 'anxious';
+function todayToEmotion(today: { emoji?: string | null; score?: number | null } | null): PrimaryEmotion {
+  if (!today) return 'neutral';
+  const match = emotionOptions.find(
+    (e) => e.emoji === today.emoji || e.label === today.emoji,
+  );
+  return match?.primary ?? 'neutral';
 }
 
 const VIEWED_HOME_KEY = 'mc_character_viewed_home_date';
@@ -127,11 +126,10 @@ export default function DashboardPage() {
     return calculateEmotionTrend(scores);
   }, [weekData]);
 
-  const characterEmotion: PrimaryEmotion = useMemo(() => {
-    if (todayEmotion?.score != null) return scoreToEmotion(todayEmotion.score);
-    const recentScore = [...weekData].reverse().find((d) => d.score !== null)?.score ?? null;
-    return scoreToEmotion(recentScore);
-  }, [todayEmotion, weekData]);
+  const characterEmotion: PrimaryEmotion = useMemo(
+    () => todayToEmotion(todayEmotion),
+    [todayEmotion],
+  );
 
   // character_viewed_home daily dedup
   useEffect(() => {
