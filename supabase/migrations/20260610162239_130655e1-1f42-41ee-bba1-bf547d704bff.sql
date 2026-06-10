@@ -1,0 +1,1 @@
+UPDATE public.tests SET duration_minutes = 6 WHERE question_count = 20; UPDATE public.tests SET duration_minutes = 15 WHERE id = 'INT';
