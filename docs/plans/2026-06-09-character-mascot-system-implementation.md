@@ -23,38 +23,53 @@
 
 ## Phase 7-1. 자산 R&D (선행, 1~2일)
 
-> **비코딩 작업.** Gemini Nano Banana로 4종 키 이미지 확정. 이후 모든 코드 작업의 기준.
+> **비코딩 작업.** Gemini Pro 구독을 활용한 **수동 워크플로**로 진행. API 키 불필요.
+> **전체 프롬프트 가이드**: `docs/character-assets-prompts.md` (1~6일차 일정)
 
-### Task 1: Nano Banana 환경 준비
-
-**할 일:**
-1. `aistudio.google.com` 접속 → Gemini 2.5 Flash Image 모델 활성화
-2. API 키 발급 (이미 있다면 skip)
-3. 결제 카드 등록 (예상 비용 $11 / ₩15,000)
-
-**검증:** API 키로 테스트 호출 1회 성공.
-
-### Task 2: 종별 키 이미지 4장 생성 (`calm × stable`)
-
-**프롬프트:** 디자인 문서 §5-2, §5-3, §5-4(`calm`), §5-5(`stable`) 조합 사용.
+### Task 1: 작업 환경 준비
 
 **할 일:**
-- 4종 각 `calm × stable` 이미지 생성. 일관성 OK 될 때까지 seed/프롬프트 미세 튜닝
-- 결과 4장을 1024×1024 PNG로 다운로드
-- 4종 일관된 아트 스타일이 안 나오면 같은 종 재생성. 기준: 외형(털색·체형) 동일성, 표정 부드러움, 배경 일관성
+1. `gemini.google.com` 접속 → Gemini Pro 계정 로그인 확인
+2. 로컬 작업 폴더 확인:
+   ```
+   public/character-assets-local/
+   ├── shiba/
+   ├── poodle/
+   ├── korat/
+   └── russian_blue/
+   ```
+3. `docs/character-assets-prompts.md` 열어두고 작업 일정 확인
 
-**자산 명명**: `{breed}_calm_stable.png`
+**검증:** gemini.google.com에서 테스트 프롬프트로 이미지 1장 생성 성공.
+
+### Task 2: 1일차 — 종별 키 이미지 4장 생성 (`calm × stable`)
+
+**프롬프트:** `docs/character-assets-prompts.md`의 **1일차 섹션** 프롬프트 1-A ~ 1-D 사용.
+
+**할 일:**
+- 종별로 새 채팅 세션 4개 열기 (한 종 = 한 세션 원칙)
+- 1-A(시바) → 1-B(푸들) → 1-C(코숏) → 1-D(러시안블루) 순서로 진행
+- 마음에 들 때까지 미세 조정 ("조금 더 부드럽게", "귀를 더 둥글게" 등)
+- 결과 4장을 PNG로 다운로드
+
+**자산 명명**: `{breed}/calm_stable.png` (해당 종 폴더에 저장)
 
 **커밋 없음** (자산은 7-2에서 Supabase Storage 업로드).
 
 ### Task 3: 키 이미지 인간 검수
 
 **할 일:**
-- 4장을 한 화면에 모아놓고 (a) 종 식별 가능성 (b) 톤·색감 통일감 (c) 페르소나 직관성(예: 푸들이 완벽주의 느낌인지) 체크
-- 한 종이라도 어색하면 Task 2로 회귀
-- 합격 시 `C:\Users\ricky\Desktop\mindcoach-ai-quest\public\character-assets-local\` 로컬 폴더에 임시 저장 (7-2에서 Supabase Storage 옮김)
+- 4장을 한 화면에 모아놓고 `docs/character-assets-prompts.md`의 **1일차 검수 체크리스트** 항목 확인:
+  - 4장 아트 스타일 톤 통일
+  - 4종 명확히 구별
+  - 색감 튀는 종 없음
+  - 모두 친근하고 비위협적
+  - 페르소나 직관성 (시바=의욕적, 푸들=단정, 코숏=독립적, 러시안블루=감수성)
+- 한 종이라도 어색하면 Task 2로 회귀 (해당 종만 재생성, 다른 종은 reference로 유지)
 
 **합격 기준:** "이 4마리 같이 두고 봤을 때 위화감 없음" — 본인 판단.
+
+> **이후 변형 92장 작업은 2~5일차**로 분할 진행. 본 구현 계획에서는 **Task 14~15(Phase 7-4)**에서 다시 등장.
 
 ---
 
@@ -639,53 +654,111 @@ git commit -m "feat(character): profile page mascot selection (wedge)"
 
 ---
 
-## Phase 7-4. 자산 풀 생성 (3~5일, 비코딩 병렬 진행)
+## Phase 7-4. 자산 풀 생성 (수동 워크플로, 2~5일차)
 
+> **수동 워크플로**: gemini.google.com (Gemini Pro 구독). 전체 프롬프트는 `docs/character-assets-prompts.md` 참조.
 > **Phase 7-3 마이페이지 출시 후 데이터 1~2주 수집 권장 후 시작.**
-> 인기 1-2종에 자산 생성 우선순위.
+> 인기 1-2종에 자산 생성 우선순위 (페이즈드 전략).
 
-### Task 14: 표정 변형 20장 생성 (4종 × 5표정)
+### Task 14: 2일차 — 시바이누 변형 23장
 
-각 종별로 `calm` 키 이미지를 reference로 업로드 → 표정 모디파이어만 교체:
+**프롬프트**: `docs/character-assets-prompts.md`의 **2일차 섹션** (2-A 표정 5장 + 2-B 트렌드 18장 + 2-C 카드 복사).
 
-순서 (종당 5장 = 6 emotion - 이미 만든 calm 제외):
-1. happy
-2. neutral
-3. sad
-4. angry
-5. anxious
+**작업 채팅**: 1일차 시바 채팅 세션 이어가기 또는 새 채팅 + `shiba/calm_stable.png` reference 업로드.
 
-**합격 기준:** 동일 종 내 외형 일관성. 표정만 다름.
+**저장 경로**: `public/character-assets-local/shiba/` (24장 = 23 변형 + card.png).
 
-**업로드:** `{breed}/{emotion}_stable.webp` 형태로 Storage 업로드.
+**합격 기준**: 23장 + card 전부 같은 시바이누로 보임 + 표정·트렌드 차이 명확.
 
-**검수 후 누락 종은 재생성**.
+### Task 15: 3~5일차 — 푸들·코숏·러시안블루 변형 각 23장
 
-### Task 15: 트렌드 변형 72장 생성 (4종 × 6표정 × 3트렌드)
+각 종마다 Task 14와 동일한 구조로 진행. 저장 경로만 종별 폴더로 변경:
+- 3일차: `public/character-assets-local/poodle/` (24장)
+- 4일차: `public/character-assets-local/korat/` (24장)
+- 5일차: `public/character-assets-local/russian_blue/` (24장)
 
-`stable` 이미 있으므로 나머지 3트렌드(rising, declining, crashing) × 6표정 × 4종 = 72장.
+**프롬프트**: `docs/character-assets-prompts.md`의 3~5일차 섹션 참조 (특히 고양이 종은 4일차 도입부의 "고양이 표정 특이사항" 확인).
 
-종당 한 트렌드씩 진행:
-- 종 A의 6표정 × rising = 6장
-- 종 A의 6표정 × declining = 6장
-- 종 A의 6표정 × crashing = 6장
-- 종 B, C, D 반복
+### Task 16: 6일차 — 일괄 검수 + 재생성 + 업로드 준비
 
-**업로드:** `{breed}/{emotion}_{trend}.webp`
+**Step 1: 96장 + 카드 4장 = 100장 파일 개수 확인**
 
-**중간 체크:** 종 1개 완료 시점에 전체(24장) 한 화면에 모아 일관성 확인.
+```bash
+cd public/character-assets-local
+for dir in shiba poodle korat russian_blue; do
+  echo "$dir: $(ls $dir | wc -l) files"
+done
+```
 
-### Task 16: 자산 최종 검수 시트
+각 폴더 24개씩 (총 96장) 확인.
+
+**Step 2: 일괄 검수**
+
+`docs/character-assets-prompts.md`의 **6일차 종합 검수 체크리스트** 6개 항목 통과 확인.
+
+실패 항목별 재생성 가이드는 같은 문서의 "재생성 가이드" 참조.
+
+**Step 3: WebP 변환 (squoosh.app 일괄 또는 CLI)**
+
+선택지 A — 웹: https://squoosh.app → Settings: WebP, 512×512, Quality 80 → 100장 일괄 변환.
+
+선택지 B — CLI (sharp 사용):
+```bash
+npm i -D sharp-cli
+npx sharp -i "public/character-assets-local/**/*.png" -o "public/character-assets-webp/" -f webp --resize 512 512
+```
+
+**Step 4: 자산 QA 시트 작성**
 
 **Files:**
 - Create: `docs/character-assets-qa.md`
 
-체크리스트 96 항목 마킹용 문서 작성. 통과한 자산만 production 사용.
+```markdown
+# 캐릭터 자산 QA 체크리스트 (100장)
+
+## 시바이누 (24장)
+- [ ] calm_stable
+- [ ] happy_stable / neutral_stable / sad_stable / angry_stable / anxious_stable
+- [ ] {6 emotions} × rising (6장)
+- [ ] {6 emotions} × declining (6장)
+- [ ] {6 emotions} × crashing (6장)
+- [ ] card
+
+## 푸들 (24장)
+(동일 구조)
+
+## 코리안숏헤어 (24장)
+(동일 구조)
+
+## 러시안블루 (24장)
+(동일 구조)
+
+## 종합 통과 기준
+- [ ] 4종 사이 톤 통일
+- [ ] 각 종 내 외형 일관성
+- [ ] 표정·트렌드 차이 명확
+- [ ] 위협적이지 않은 톤
+```
 
 ```bash
 git add docs/character-assets-qa.md
 git commit -m "docs(character): asset QA checklist"
 ```
+
+**Step 5: Supabase Storage 일괄 업로드**
+
+Supabase Studio → Storage → `character-assets` 버킷 → 종별 폴더 만든 후 100장 WebP 업로드.
+
+업로드 경로 규칙: `{breed}/{emotion}_{trend}.webp` + `{breed}/card.webp`.
+
+**Step 6: 업로드 검증**
+
+브라우저에서 직접 접근:
+```
+https://bnhnaaarsyauppdbrbco.supabase.co/storage/v1/object/public/character-assets/poodle/anxious_declining.webp
+```
+
+200 + 이미지 표시 확인.
 
 ---
 
