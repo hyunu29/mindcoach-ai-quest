@@ -18,6 +18,15 @@ import {
   type IntegratedScoringResult,
   type DomainScore,
 } from "@/lib/integrated-test-scoring";
+import {
+  recommendCharacter,
+  type DomainScores,
+  type DomainKey,
+} from "@/lib/character/recommend";
+import { CharacterRecommendationCard } from "@/components/character/CharacterRecommendationCard";
+import { CharacterSelectModal } from "@/components/character/CharacterSelectModal";
+import { useCharacter } from "@/hooks/useCharacter";
+import type { Breed } from "@/lib/character/types";
 
 function getBarColor(score: number, max: number) {
   const pct = (score / max) * 100;
@@ -66,10 +75,47 @@ export default function ResultsPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isTempResult, setIsTempResult] = useState(false);
   const [testNameById, setTestNameById] = useState<Record<string, string>>({});
+  const [characterModalOpen, setCharacterModalOpen] = useState(false);
+  const [recommendationFired, setRecommendationFired] = useState(false);
+
+  const { selectedBreed, recommendedBreed, selectCharacter } = useCharacter();
 
   useEffect(() => {
     loadResult();
   }, [id]);
+
+  useEffect(() => {
+    if (recommendationFired || !result || !result.isIntegrated) return;
+    const domains: DomainScores = {
+      emotional_instability: 0,
+      test_stage_anxiety: 0,
+      learning_obsession: 0,
+      routine_time_control: 0,
+      cognitive_focus: 0,
+      learning_avoidance: 0,
+      somatic_pain: 0,
+      energy_burnout: 0,
+      self_relationships: 0,
+      sleep_routine: 0,
+    };
+    for (const d of INTEGRATED_DOMAINS) {
+      const score = (result.subdomainScores[d.name] as number) ?? 0;
+      if (d.key in domains) domains[d.key as DomainKey] = score;
+    }
+    const rec = recommendCharacter(domains);
+    if (rec.status !== 'insufficient_data') {
+      const top2Gap =
+        rec.status === 'tie'
+          ? rec.top.score - rec.runnerUp.score
+          : rec.top.score - rec.rest[0].score;
+      void track('character_recommended', {
+        recommended_breed: rec.top.breed,
+        affinity_score: rec.top.score,
+        top2_gap: top2Gap,
+      });
+      setRecommendationFired(true);
+    }
+  }, [result, recommendationFired]);
 
   const loadResult = async () => {
     setLoading(true);
@@ -236,6 +282,25 @@ export default function ResultsPage() {
   const topDomainScore = domainScoresForHelpers.length
     ? [...domainScoresForHelpers].sort((a, b) => b.score - a.score)[0]
     : null;
+  const characterDomainScores: DomainScores = {
+    emotional_instability: 0,
+    test_stage_anxiety: 0,
+    learning_obsession: 0,
+    routine_time_control: 0,
+    cognitive_focus: 0,
+    learning_avoidance: 0,
+    somatic_pain: 0,
+    energy_burnout: 0,
+    self_relationships: 0,
+    sleep_routine: 0,
+  };
+  for (const ds of domainScoresForHelpers) {
+    if (ds.key in characterDomainScores) {
+      characterDomainScores[ds.key as DomainKey] = ds.score;
+    }
+  }
+  const characterRecommendation = recommendCharacter(characterDomainScores);
+
   const helperResult: IntegratedScoringResult = {
     totalScore: result.totalScore,
     maxTotalScore: 250,
@@ -245,6 +310,18 @@ export default function ResultsPage() {
     topDomain: topDomainScore,
     riskLevel: (result.riskLevel as any) || "safe",
     riskLabel: riskLabel,
+    characterRecommendation,
+  };
+
+  const handleCharacterSelect = async (breed: Breed) => {
+    const source: 'recommended' | 'free' | 'changed' =
+      breed === recommendedBreed
+        ? 'recommended'
+        : selectedBreed === null
+        ? 'free'
+        : 'changed';
+    await selectCharacter(breed, source);
+    setCharacterModalOpen(false);
   };
 
   const integratedDescription = isIntegrated
@@ -306,6 +383,32 @@ export default function ResultsPage() {
         <h1 className="text-xl font-bold mb-0.5">{result.testName}</h1>
         <p className="text-xs text-muted-foreground">{dateStr} 실시</p>
       </div>
+
+      {/* Character Recommendation (통합검사만, 충분 데이터일 때) */}
+      {isIntegrated && characterRecommendation.status !== 'insufficient_data' && (
+        <CharacterRecommendationCard
+          topBreed={characterRecommendation.top.breed}
+          runnerUpBreed={
+            characterRecommendation.status === 'tie'
+              ? characterRecommendation.runnerUp.breed
+              : undefined
+          }
+          onSelect={handleCharacterSelect}
+          onOpenAll={() => setCharacterModalOpen(true)}
+        />
+      )}
+
+      <CharacterSelectModal
+        open={characterModalOpen}
+        onOpenChange={setCharacterModalOpen}
+        currentBreed={selectedBreed}
+        recommendedBreed={
+          characterRecommendation.status !== 'insufficient_data'
+            ? characterRecommendation.top.breed
+            : recommendedBreed
+        }
+        onSelect={handleCharacterSelect}
+      />
 
       {/* Total Score & Risk */}
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm text-center">
