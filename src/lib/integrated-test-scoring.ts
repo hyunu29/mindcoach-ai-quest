@@ -13,6 +13,12 @@ import {
   INTEGRATED_TEST_QUESTIONS,
   type IntegratedDomain,
 } from "@/data/integrated-test";
+import {
+  recommendCharacter,
+  type DomainKey,
+  type DomainScores,
+  type Recommendation,
+} from "@/lib/character/recommend";
 
 export interface IntegratedAnswer {
   questionId: number;
@@ -45,6 +51,7 @@ export interface IntegratedScoringResult {
   topDomain: DomainScore | null;
   riskLevel: "safe" | "caution" | "warning" | "danger";
   riskLabel: string;
+  characterRecommendation: Recommendation;
 }
 
 const TOTAL_QUESTIONS =
@@ -130,6 +137,25 @@ export function scoreIntegratedTest(
   const highCount = domainScores.filter((d) => d.isHigh).length;
   const { level, label } = getRiskFromHighDomains(highCount);
 
+  const characterDomainScores: DomainScores = {
+    emotional_instability: 0,
+    test_stage_anxiety: 0,
+    learning_obsession: 0,
+    routine_time_control: 0,
+    cognitive_focus: 0,
+    learning_avoidance: 0,
+    somatic_pain: 0,
+    energy_burnout: 0,
+    self_relationships: 0,
+    sleep_routine: 0,
+  };
+  for (const ds of domainScores) {
+    if (ds.key in characterDomainScores) {
+      characterDomainScores[ds.key as DomainKey] = ds.score;
+    }
+  }
+  const characterRecommendation = recommendCharacter(characterDomainScores);
+
   return {
     totalScore,
     maxTotalScore: MAX_TOTAL_SCORE,
@@ -139,6 +165,7 @@ export function scoreIntegratedTest(
     topDomain,
     riskLevel: level,
     riskLabel: label,
+    characterRecommendation,
   };
 }
 
