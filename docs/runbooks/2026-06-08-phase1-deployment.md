@@ -39,19 +39,25 @@ Supabase Dashboard → Project Settings → Edge Functions → "Add new secret":
 - Name: `CRON_SECRET`
 - Value: 위에서 생성한 값
 
-### 1-3. Postgres GUC 등록 (pg_cron이 읽을 값)
+### 1-3. Supabase Vault에 시크릿 등록
+
+(`ALTER DATABASE`는 Supabase에서 권한 막혀 있음. Vault가 표준.)
 
 Supabase Dashboard → SQL Editor:
 ```sql
-ALTER DATABASE postgres SET app.cron_secret = '여기에_같은_값_붙여넣기';
--- 변경은 새 세션부터 적용. 검증은 1-4에서.
+SELECT vault.create_secret('여기에_같은_값_붙여넣기', 'cron_secret');
+```
+이미 등록되어 있으면 UNIQUE constraint 에러 — 그때는 갱신:
+```sql
+UPDATE vault.secrets
+   SET secret = '여기에_같은_값_붙여넣기'
+ WHERE name = 'cron_secret';
 ```
 
 ### 1-4. 검증
 
-새 SQL Editor 탭에서:
 ```sql
-SELECT current_setting('app.cron_secret', true);
+SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'cron_secret';
 -- 위에서 넣은 값이 그대로 출력되어야 함
 ```
 

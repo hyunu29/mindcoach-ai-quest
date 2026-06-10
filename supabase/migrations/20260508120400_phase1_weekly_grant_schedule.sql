@@ -1,7 +1,8 @@
 -- Phase 1 P1.5: weekly-grant Edge Function pg_cron 스케줄
 -- 매주 토요일 15:00 UTC = 일요일 00:00 KST 트리거.
--- CRON_SECRET 값은 super_admin이 SQL Editor에서 1회 설정:
---   ALTER DATABASE postgres SET app.cron_secret = '<같은 값으로 Edge Function env에도 설정>';
+-- CRON_SECRET 값은 Supabase Vault에 'cron_secret' 이름으로 등록 (super_admin이 SQL Editor에서 1회):
+--   SELECT vault.create_secret('<값>', 'cron_secret');
+-- 같은 값을 Edge Function env CRON_SECRET 에도 설정.
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS pg_net;
@@ -22,7 +23,7 @@ SELECT cron.schedule(
     url := 'https://bnhnaaarsyauppdbrbco.supabase.co/functions/v1/weekly-grant',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-cron-secret', current_setting('app.cron_secret', true)
+      'x-cron-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'cron_secret')
     ),
     timeout_milliseconds := 30000
   );
