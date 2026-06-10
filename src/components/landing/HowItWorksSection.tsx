@@ -11,7 +11,7 @@ const steps = [
   {
     num: "02",
     icon: PenLine,
-    title: "3분 검사",
+    title: "5분 검사",
     desc: "20문항 리커트 척도, 직관적으로 답하면 끝",
   },
   {
@@ -29,7 +29,7 @@ export default function HowItWorksSection() {
     <section id="how-it-works" className="py-24 px-6 bg-muted/50" ref={ref}>
       <div className="container max-w-4xl">
         <h2 className="text-2xl md:text-3xl font-bold text-center mb-14">
-          3분이면 시작할 수 있어요
+          5분이면 시작할 수 있어요
         </h2>
 
         <div className="grid md:grid-cols-3 gap-8">
