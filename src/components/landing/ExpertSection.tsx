@@ -1,5 +1,5 @@
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
-import { User } from "lucide-react";
+import kimJonghwan from "../../../public/kim-jonghwan.png";
 
 const stats = [
   { number: "32가지", label: "수험생 심리 증후군 분류 체계" },
@@ -20,8 +20,13 @@ export default function ExpertSection() {
         <div className="flex flex-col md:flex-row gap-10 items-center md:items-start">
           {/* Profile */}
           <div className="flex flex-col items-center shrink-0">
-            <div className="w-28 h-28 rounded-full gradient-primary flex items-center justify-center mb-4">
-              <User className="w-14 h-14 text-white/80" />
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden mb-4 border-2 border-primary/20 shadow-sm bg-gradient-to-b from-muted/40 to-muted/10">
+              <img
+                src={kimJonghwan}
+                alt="마인드코치 김종환"
+                className="w-full h-full object-cover object-top"
+                loading="lazy"
+              />
             </div>
             <div className="text-lg font-bold">김종환</div>
             <div className="text-sm text-muted-foreground text-center">
