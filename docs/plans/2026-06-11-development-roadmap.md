@@ -1,4 +1,4 @@
-# 마이치 개발 로드맵 (2026-06-11 기준)
+# 마이치 개발 로드맵 (2026-06-11 기준, 2026-06-12 P1↔P2 스왑)
 
 **작성 목적:** 마이치 정식 출범 이후 남은 미해결 작업을 우선순위·책임 주체·병행 가능성으로 정리.
 
@@ -6,6 +6,8 @@
 - **Claude 코드**: 로컬에서 코드 수정 → GitHub push → Lovable sync. revert 사고 방지를 위해 Lovable이 같은 파일을 동시에 수정하지 않도록 작업 분리.
 - **Lovable 프롬프트**: 시각 폴리시, 자산 생성(favicon/OG/캐릭터 카드), 통합 QA에 한정.
 - **사용자 수동**: 외부 서비스 가입/설정(도메인, Toss, 카카오 Developers, Supabase Dashboard) + 김민수 발주.
+
+**P1↔P2 스왑 사유 (2026-06-12):** 캐릭터 자산은 김민수 발주 + 96장 생성 + 업로드까지 며칠~1주 외부 대기. 카카오/Toss/도메인/사업자등록도 외부 대기 작업이지만 사용자가 신청 절차만 시작하면 그 사이 시간이 비기 때문에, **캐릭터를 먼저 풀어 retention 코어 기능을 시장에 노출**하고 결제/카카오는 외부 대기 흐름으로 병행 진행.
 
 ---
 
@@ -29,27 +31,27 @@
 
 ---
 
-## 1. 우선순위 매트릭스
+## 1. 우선순위 매트릭스 (2026-06-12 스왑 반영)
 
 | Pri | 작업 | 책임 주체 | 선행 조건 | 비고 |
 |-----|------|-----------|-----------|------|
 | **P0-1** | Lovable sync + 01 프롬프트 | 사용자 (Lovable AI) | GitHub `e9c2f33` push 완료 ✅ | favicon/OG 포함 |
 | **P0-2** | QA 가이드 체크리스트 통과 | 사용자 | P0-1 완료 | docs/qa-guide-rebrand.md |
-| **P1-1** | 카카오 OAuth (web) | Claude 코드 + 사용자 콘솔 | Kakao Developers 앱 등록 | Supabase Auth provider |
-| **P1-2** | 도메인 발급 + DNS | 사용자 | 도메인명 확정 | mych.ai? mych.co.kr? |
-| **P1-3** | 사업자등록 | 사용자 | — | Toss 가입의 선행 |
-| **P1-4** | Toss Payments 가입 + 라이브 키 | 사용자 | P1-2, P1-3 | 도메인 검증 필요 |
-| **P1-5** | Toss 결제 연동 (Mock → 실제) | Claude 코드 | P1-4 | 환경분기 + verify-payment |
-| **P1-6** | 무료 4종 funnel 검증 | Claude SQL 분석 | analytics 1주 수집 | INT+E-3+A-2+D-1 |
-| **P2-1** | 캐릭터 자산 96장 + 4 카드 | 사용자 (김민수 발주) | — | Gemini Pro |
-| **P2-2** | Supabase Storage 업로드 | 사용자 (또는 Claude 스크립트) | P2-1 완료 | `character-assets` 버킷 |
-| **P2-3** | 캐릭터 마이그레이션 push | Claude | — | 2026060912* 2종 |
-| **P2-4** | Lovable 02 프롬프트 (통합 QA) | 사용자 (Lovable AI) | P2-1, P2-2, P2-3 | 자산 + 흐름 + 회귀 |
-| **P2-5** | Phase 7-8 이벤트 실측 검증 | Claude SQL 분석 | analytics 7일 수집 | character_* 5종 |
-| **P3-1** | Lovable 독립 (Vercel 이전) | Claude + 사용자 | P0~P1 안정화 | 모바일 앱의 전제 |
+| **P1-1** | 캐릭터 자산 96장 + 4 카드 | 사용자 (김민수 발주) | — | Gemini Pro, ~$11 |
+| **P1-2** | Supabase Storage 업로드 | 사용자 (또는 Claude 스크립트) | P1-1 완료 | `character-assets` 버킷 |
+| **P1-3** | 캐릭터 마이그레이션 push | Claude | — | 2026060912* 2종 |
+| **P1-4** | Lovable 02 프롬프트 (통합 QA) | 사용자 (Lovable AI) | P1-1, P1-2, P1-3 | 자산 + 흐름 + 회귀 |
+| **P1-5** | Phase 7-8 이벤트 실측 검증 | Claude SQL 분석 | analytics 7일 수집 | character_* 5종 |
+| **P2-1** | 카카오 OAuth (web) | Claude 코드 + 사용자 콘솔 | Kakao Developers 앱 등록 | Supabase Auth provider |
+| **P2-2** | 도메인 발급 + DNS | 사용자 | 도메인명 확정 | mych.ai? mych.co.kr? |
+| **P2-3** | 사업자등록 | 사용자 | — | Toss 가입의 선행 |
+| **P2-4** | Toss Payments 가입 + 라이브 키 | 사용자 | P2-2, P2-3 | 도메인 검증 필요 |
+| **P2-5** | Toss 결제 연동 (Mock → 실제) | Claude 코드 | P2-4 | 환경분기 + verify-payment |
+| **P2-6** | 무료 4종 funnel 검증 | Claude SQL 분석 | analytics 1주 수집 | INT+E-3+A-2+D-1 |
+| **P3-1** | Lovable 독립 (Vercel 이전) | Claude + 사용자 | P0~P2 안정화 | 모바일 앱의 전제 |
 | **P3-2** | Capacitor Android 앱 | Claude + 사용자 | P3-1 완료 | iOS는 v1.1+ |
 | **P3-3** | B2B 학원 대시보드 wedge | Claude + 김종환쌤 | analytics 데이터 + 영업 | 학원 납품 wedge |
-| **P3-4** | 추천 알고리즘 가중치 튜닝 | Claude | P2-5 데이터 | 10영역 가중치 |
+| **P3-4** | 추천 알고리즘 가중치 튜닝 | Claude | P1-5 데이터 | 10영역 가중치 |
 
 ---
 
@@ -77,11 +79,67 @@
 
 ---
 
-## 3. P1 — 출시 차단 (가입/결제 흐름)
+## 3. P1 — 캐릭터 마스코트 출시 (retention 코어)
 
-병행 가능 그룹: **P1-1 (카카오)** 과 **P1-2/3/4/5 (도메인→사업자→Toss)** 는 독립적으로 동시 진행 가능.
+캐릭터를 먼저 풀어 retention 코어 기능을 시장에 노출. P1-1~P1-2가 외부 대기 동안 P2 트랙(카카오/Toss/도메인) 외부 신청을 병행.
 
-### P1-1. 카카오 OAuth (web 회원가입/로그인)
+### P1-1. 자산 96장 + 4 카드 생성
+
+**책임:** 사용자 (김민수 발주)
+
+**스펙:**
+- 4 breed × 6 emotion × 4 trend = 96장 (.webp, 정사각, 투명 배경)
+- 4 카드 (선택 모달용)
+- Gemini Pro (Gemini 2.5 Flash Image) 활용
+- 프롬프트 가이드: `docs/character-assets-prompts.md`
+
+**예상 비용:** ~$11
+
+**소유권 주의:** 캐릭터 IP는 신현우 단독 재산. 발주 계약서에 work-for-hire 명시.
+
+### P1-2. Supabase Storage 업로드
+
+**책임:** 사용자 (또는 Claude 업로드 스크립트)
+
+**경로 규칙:** `character-assets/{breed}/{emotion}_{trend}.webp`, 카드는 `character-assets/{breed}/card.webp`.
+
+**선행:** P1-1 + P1-3 (버킷 생성 마이그레이션).
+
+### P1-3. 캐릭터 마이그레이션 push
+
+**Claude 작업:**
+- `supabase/migrations/20260609120000_add_character_columns_to_profiles.sql` push
+- `supabase/migrations/20260609120100_create_character_assets_bucket.sql` push
+- 실행: Supabase MCP `apply_migration` 또는 Supabase CLI
+
+**검증:** profiles 테이블에 `recommended_breed`, `selected_breed`, `character_chosen_at`, `character_changed_count` 컬럼 존재.
+
+**진행 가능 시점:** P1-1 자산과 무관하게 즉시 push 가능 (자산은 컬럼/버킷이 미리 있어야 업로드되니까 오히려 선행).
+
+### P1-4. Lovable 02 프롬프트 (통합 QA)
+
+**책임:** 사용자 (Lovable workspace에서 실행)
+
+**선행:** P1-1, P1-2, P1-3 모두 완료.
+
+**프롬프트:** `docs/lovable-prompts/02-character-system-prep.md` 사용.
+
+### P1-5. Phase 7-8 이벤트 실측 검증
+
+**Claude 작업:**
+- `docs/analytics-queries.md`의 character funnel SQL 5종 실행
+- character_viewed_home 일일 dedup 정상 동작 확인
+- character_recommended → character_recommendation_clicked → character_selected 전환율 측정
+
+**선행:** P1-4 완료 후 1주 데이터.
+
+---
+
+## 4. P2 — 출시 차단 (가입/결제 흐름)
+
+P1과 병행 진행 가능. 외부 신청 절차(P2-2, P2-3, P2-4)는 결과 받기까지 며칠~수주 대기되므로 P1 진행 중에 미리 신청 시작.
+
+### P2-1. 카카오 OAuth (web 회원가입/로그인)
 
 **Claude 코드 작업:**
 - `src/pages/AuthPage.tsx`: "카카오로 시작하기" 버튼 + Supabase `signInWithOAuth({ provider: 'kakao' })` 호출
@@ -98,7 +156,7 @@
 
 **검증:** 회원가입 → 카카오 로그인 → 프로필 자동 생성 → 통합검사 진입.
 
-### P1-2. 도메인 발급
+### P2-2. 도메인 발급
 
 **책임:** 사용자
 
@@ -109,7 +167,7 @@
 
 **산출물:** 정식 도메인 소유.
 
-### P1-3. 사업자등록
+### P2-3. 사업자등록
 
 **책임:** 사용자
 
@@ -117,11 +175,11 @@
 
 **Why:** Toss Payments는 사업자등록증 없이 가입 불가.
 
-### P1-4. Toss Payments 가입 + 라이브 키
+### P2-4. Toss Payments 가입 + 라이브 키
 
 **책임:** 사용자
 
-**선행 조건:** P1-2 (도메인 — 검증용), P1-3 (사업자등록).
+**선행 조건:** P2-2 (도메인 — 검증용), P2-3 (사업자등록).
 
 **스텝:**
 1. [Toss Payments](https://toss.im/payments) 가입
@@ -130,7 +188,7 @@
 4. 라이브 클라이언트 키 + 시크릿 키 발급
 5. Supabase Edge Function 환경변수에 시크릿 키 저장 (`TOSS_SECRET_KEY`)
 
-### P1-5. Toss 결제 연동 (Mock → 실제)
+### P2-5. Toss 결제 연동 (Mock → 실제)
 
 **Claude 코드 작업:**
 - `src/lib/payments/index.ts`: `getPaymentProvider()` 환경분기 추가 (`VITE_PAYMENT_PROVIDER=toss` vs `mock`)
@@ -141,7 +199,7 @@
 
 **검증:** 단품 ₩2,900 결제 → Toss 결제창 → 카드 인증 → DB `payments` 테이블 confirmed.
 
-### P1-6. 무료 4종 funnel 검증
+### P2-6. 무료 4종 funnel 검증
 
 **Claude 작업:**
 - `docs/analytics-queries.md`의 funnel SQL 실행
@@ -149,58 +207,6 @@
 - 1주 데이터 수집 후 분석
 
 **산출물:** 전환율 보고 + 다음 가설(가격 조정? 무료 검사 변경?).
-
----
-
-## 4. P2 — 캐릭터 마스코트 출시
-
-### P2-1. 자산 96장 + 4 카드 생성
-
-**책임:** 사용자 (김민수 발주)
-
-**스펙:**
-- 4 breed × 6 emotion × 4 trend = 96장 (.webp, 정사각, 투명 배경)
-- 4 카드 (선택 모달용)
-- Gemini Pro (Gemini 2.5 Flash Image) 활용
-- 프롬프트 가이드: `docs/character-assets-prompts.md`
-
-**예상 비용:** ~$11
-
-**소유권 주의:** 캐릭터 IP는 신현우 단독 재산. 발주 계약서에 work-for-hire 명시.
-
-### P2-2. Supabase Storage 업로드
-
-**책임:** 사용자 (또는 Claude 업로드 스크립트)
-
-**경로 규칙:** `character-assets/{breed}/{emotion}_{trend}.webp`, 카드는 `character-assets/{breed}/card.webp`.
-
-**선행:** P2-1 + P2-3 (버킷 생성 마이그레이션).
-
-### P2-3. 캐릭터 마이그레이션 push
-
-**Claude 작업:**
-- `supabase/migrations/20260609120000_add_character_columns_to_profiles.sql` push
-- `supabase/migrations/20260609120100_create_character_assets_bucket.sql` push
-- 실행: Supabase MCP `apply_migration` 또는 Supabase CLI
-
-**검증:** profiles 테이블에 `recommended_breed`, `selected_breed`, `character_chosen_at`, `character_changed_count` 컬럼 존재.
-
-### P2-4. Lovable 02 프롬프트 (통합 QA)
-
-**책임:** 사용자 (Lovable workspace에서 실행)
-
-**선행:** P2-1, P2-2, P2-3 모두 완료.
-
-**프롬프트:** `docs/lovable-prompts/02-character-system-prep.md` 사용.
-
-### P2-5. Phase 7-8 이벤트 실측 검증
-
-**Claude 작업:**
-- `docs/analytics-queries.md`의 character funnel SQL 5종 실행
-- character_viewed_home 일일 dedup 정상 동작 확인
-- character_recommended → character_recommendation_clicked → character_selected 전환율 측정
-
-**선행:** P2-4 완료 후 1주 데이터.
 
 ---
 
@@ -219,9 +225,9 @@
 1. Vercel 가입 (GitHub 계정 연동)
 2. mindcoach-ai-quest import
 3. 환경변수 등록
-4. P1-2 도메인 연결
+4. P2-2 도메인 연결
 
-**선행:** P0~P1 안정화 후 (출시 차단 작업이 끝나야 안전하게 이전 가능).
+**선행:** P0~P2 안정화 후 (출시 차단 작업이 끝나야 안전하게 이전 가능).
 
 ### P3-2. Capacitor Android 앱
 
@@ -252,7 +258,7 @@
 ### P3-4. 추천 알고리즘 튜닝
 
 **Claude 작업:**
-- P2-5 데이터 기반 가중치 조정
+- P1-5 데이터 기반 가중치 조정
 - A/B 테스트 인프라
 
 ---
@@ -260,11 +266,11 @@
 ## 6. 책임 분담 한눈에 보기
 
 ### Claude (코드)
-- P1-1 카카오 OAuth UI/콜백
-- P1-5 Toss 결제 연동
-- P1-6 SQL 분석
-- P2-3 마이그레이션 push
-- P2-5 이벤트 검증 SQL
+- P1-3 마이그레이션 push
+- P1-5 이벤트 검증 SQL
+- P2-1 카카오 OAuth UI/콜백
+- P2-5 Toss 결제 연동
+- P2-6 SQL 분석
 - P3-1 Vercel 설정
 - P3-2 Capacitor 설정
 - P3-3 학원 대시보드
@@ -272,21 +278,21 @@
 
 ### Lovable 프롬프트
 - P0-1 01 리브랜드 QA + favicon/OG
-- P2-4 02 캐릭터 통합 QA
+- P1-4 02 캐릭터 통합 QA
 
 ### 사용자 수동 (외부 서비스)
 - P0-1 Lovable sync 트리거
-- P1-1 Kakao Developers 등록 + Supabase Auth 설정
-- P1-2 도메인 구매
-- P1-3 사업자등록
-- P1-4 Toss 가입 + 키 발급
-- P2-1 김민수 자산 발주
-- P2-2 Storage 업로드
+- P1-1 김민수 자산 발주
+- P1-2 Storage 업로드
+- P2-1 Kakao Developers 등록 + Supabase Auth 설정
+- P2-2 도메인 구매
+- P2-3 사업자등록
+- P2-4 Toss 가입 + 키 발급
 - P3-1 Vercel 가입 + 도메인 연결
 - P3-2 Play Console 등재
 
 ### 외부 / 협업 의존
-- 김민수: P2-1 캐릭터 자산
+- 김민수: P1-1 캐릭터 자산
 - 김종환쌤: P3-3 B2B 영업
 
 ---
@@ -296,26 +302,30 @@
 ```
 P0-1 (Lovable sync) ─┬─ P0-2 (QA pass)
                      │
-                     ├─ P1-1 (카카오) ──────────────────────┐
-                     │                                       │
-                     ├─ P1-2 (도메인) ─┐                     │
-                     │                 ├─ P1-4 (Toss) ─ P1-5 (연동) ─┐
-                     ├─ P1-3 (사업자) ─┘                              │
+                     │  ┌─ P1-3 (마이그레이션 push, 즉시 가능)
+                     │  │
+                     ├──┼─ P1-1 (자산 발주) ─ P1-2 (Storage 업로드) ─ P1-4 (Lovable 02 QA) ─ P1-5 (검증)
+                     │  │
+                     │  └─ (P1 트랙)
+                     │
+                     │  ┌─ P2-1 (카카오) ──────────────────────────┐
+                     │  │                                            │
+                     ├──┼─ P2-2 (도메인) ─┐                          │
+                     │  │                 ├─ P2-4 (Toss) ─ P2-5 ─ P2-6
+                     │  └─ P2-3 (사업자) ─┘                          │
                      │                                                │
-                     ├─ P2-1 (자산) ─ P2-2 (업로드) ─┐                │
-                     │                                ├─ P2-4 (QA) ─ P2-5 (검증)
-                     └─ P2-3 (마이그레이션 push) ────┘                │
-                                                                      │
-                                                                      ▼
-                                                              P3-1 (Vercel) ─ P3-2 (모바일)
-                                                                      │
-                                                                      ├─ P3-3 (학원)
-                                                                      └─ P3-4 (튜닝)
+                     │     (P2 트랙)                                  │
+                     │                                                ▼
+                     │                                        P3-1 (Vercel) ─ P3-2 (모바일)
+                     │                                                │
+                     │                                                ├─ P3-3 (학원)
+                     │                                                └─ P3-4 (튜닝)
 ```
 
 **핵심 병행 그룹:**
-- P0 완료 즉시 **P1-1 + P1-2/3/4/5 + P2-1** 3개 트랙 동시 시작 가능
-- P2-3 마이그레이션 push는 자산 도착 전이라도 즉시 가능 (P2-1과 독립)
+- P0 완료 즉시 **P1 트랙 + P2 트랙** 동시 시작 가능
+- P1-3 마이그레이션 push는 자산 도착 전이라도 즉시 가능 (P1-1과 독립)
+- P2 외부 신청(도메인/사업자/Toss/카카오)은 결과 대기 며칠~수주 — P1 진행 중 미리 시작
 - Claude 작업과 Lovable 작업은 같은 시점 다른 파일이면 OK, 같은 파일이면 순차 (revert 사고 방지)
 
 ---
@@ -323,9 +333,10 @@ P0-1 (Lovable sync) ─┬─ P0-2 (QA pass)
 ## 8. 다음 액션 (지금 바로)
 
 1. **사용자**: P0-1 Lovable sync 트리거 + 01 프롬프트 실행
-2. **사용자**: 카카오 Developers 앱 등록 시작 (P1-1 외부 부분)
-3. **사용자**: 도메인 후보 결정 + 등록 (P1-2)
-4. **Claude (대기)**: P0-1 통과 보고 후 → P1-1 코드 작업 시작 + P2-3 마이그레이션 push 검토
+2. **사용자**: 김민수에게 P1-1 자산 발주 (`docs/character-assets-prompts.md` 전달)
+3. **사용자 (병행)**: P2-2 도메인 후보 결정 + 등록, P2-3 사업자등록 시작
+4. **사용자 (병행)**: P2-1 Kakao Developers 앱 등록 시작
+5. **Claude (대기)**: P0-1 통과 보고 후 → P1-3 마이그레이션 push + P2-1 카카오 UI 코드 시작
 
 ---
 
