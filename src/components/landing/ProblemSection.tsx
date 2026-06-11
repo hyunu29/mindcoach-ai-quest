@@ -45,7 +45,7 @@ export default function ProblemSection() {
         </div>
 
         <p className="text-center text-muted-foreground mt-12 text-sm">
-          마인드코치 AI는 이 문제를 해결하기 위해 만들어졌습니다.
+          마이치는 이 문제를 해결하기 위해 만들어졌습니다.
         </p>
       </div>
     </section>

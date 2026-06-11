@@ -516,7 +516,7 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center">
             <span className="text-3xl">💜</span>
           </div>
-          <p className="text-sm text-muted-foreground text-center">마인드코치가 오늘의 감정을 기록할 수 있도록 도와줄게요</p>
+          <p className="text-sm text-muted-foreground text-center">마이치가 오늘의 감정을 기록할 수 있도록 도와줄게요</p>
 
           <Button variant="hero" size="lg" className="rounded-xl w-full max-w-xs" onClick={startConversation}>
             {todayRecord ? "한 번 더 기록하기" : "감정 기록 시작하기"}

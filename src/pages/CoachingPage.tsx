@@ -184,7 +184,7 @@ export default function CoachingPage() {
       onError: (err) => {
         setIsTyping(false);
         // TODO: refund credit on stream error
-        const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 마인드코치 AI입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
+        const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 마이치입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
         setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s));
         toast({ title: "AI 연결 오류", description: err, variant: "destructive" });
       },
@@ -402,7 +402,7 @@ export default function CoachingPage() {
             <Brain className="w-5 h-5 text-primary-foreground" />
           </div>
           <div className="min-w-0">
-            <div className="font-bold text-sm">마인드코치</div>
+            <div className="font-bold text-sm">마이치</div>
             <div className="text-[10px] text-muted-foreground">AI 심리 코칭</div>
           </div>
           <button

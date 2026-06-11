@@ -7,7 +7,7 @@ export default function LandingFooter() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-2 font-bold">
             <Sparkles className="w-4 h-4 text-primary" />
-            마인드코치 AI
+            마이치
           </div>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">이용약관</a>
@@ -18,7 +18,7 @@ export default function LandingFooter() {
 
         <div className="text-center space-y-2">
           <p className="text-xs text-muted-foreground">
-            © 2026 마인드코치 AI. All rights reserved.
+            © 2026 마이치. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground/70">
             본 서비스는 전문 의료 상담을 대체하지 않습니다.
