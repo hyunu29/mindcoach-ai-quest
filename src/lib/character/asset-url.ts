@@ -1,7 +1,7 @@
 import type { Breed, CharacterTrend } from './types';
 import type { PrimaryEmotion } from '@/lib/emotion-agent-types';
 
-const STORAGE_BASE = 'https://bnhnaaarsyauppdbrbco.supabase.co/storage/v1/object/public/character-assets';
+const STORAGE_BASE = 'https://bpkzljeplyqvbmwwomom.supabase.co/storage/v1/object/public/character-assets';
 
 export function getCharacterAssetUrl(
   breed: Breed,
