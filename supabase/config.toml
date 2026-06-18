@@ -1,4 +1,7 @@
-project_id = "bnhnaaarsyauppdbrbco"
+project_id = "bpkzljeplyqvbmwwomom"
+
+[functions.chat-coaching]
+verify_jwt = true
 
 [functions.create-payment-order]
 verify_jwt = true

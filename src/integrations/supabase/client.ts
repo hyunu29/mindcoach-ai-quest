@@ -4,12 +4,13 @@ import type { Database } from './types';
 
 // Supabase URL/anon key는 클라이언트 번들에 노출되는 공개값이므로 하드코딩.
 // Service role key는 절대 여기 두지 말 것 — Edge Function 환경변수로만 사용.
+// Project: bpkzljeplyqvbmwwomom (mych, ricky012941@gmail.com GitHub OAuth로 생성한 Supabase 계정)
 const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL ||
-  "https://bnhnaaarsyauppdbrbco.supabase.co";
+  "https://bpkzljeplyqvbmwwomom.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuaG5hYWFyc3lhdXBwZGJyYmNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc5NzMsImV4cCI6MjA4OTc2Mzk3M30.Cbd6nbPGuOMHfZ7oHDTmAhMgx_luVxh1gDyFO4UqfYM";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwa3psamVwbHlxdmJtd3dvbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDAzMjEsImV4cCI6MjA4OTkxNjMyMX0.6iaamauaqvt5aHEOFF2Dx3A7Fu8ZUvCoz4oTvCUvSHI";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
