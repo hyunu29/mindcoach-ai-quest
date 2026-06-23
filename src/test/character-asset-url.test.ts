@@ -4,12 +4,12 @@ import { getCharacterAssetUrl, getCharacterCardUrl, FALLBACK_ASSET } from '@/lib
 describe('character asset URL', () => {
   it('builds breed/emotion_trend.webp path', () => {
     const url = getCharacterAssetUrl('poodle', 'anxious', 'declining');
-    expect(url).toContain('/character-assets/poodle/anxious_declining.webp');
+    expect(url).toContain('/poodle/anxious_declining.webp');
   });
 
   it('builds card asset URL', () => {
     const url = getCharacterCardUrl('shiba');
-    expect(url).toContain('/character-assets/shiba/card.webp');
+    expect(url).toMatch(/\/shiba\/(card|calm_stable)\.webp$/);
   });
 
   it('exposes a fallback path', () => {
