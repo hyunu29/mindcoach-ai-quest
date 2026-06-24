@@ -28,7 +28,7 @@ export function CharacterAvatar({ breed, emotion, trend, size, className }: Prop
       src={src}
       alt={`${BREED_PERSONAS[breed].koreanName} - ${emotion}`}
       onError={() => setErrored(true)}
-      className={`object-contain ${SIZE_CLASS[size]} ${className ?? ''}`}
+      className={`object-contain rounded-3xl ${SIZE_CLASS[size]} ${className ?? ''}`}
       loading="lazy"
     />
   );
