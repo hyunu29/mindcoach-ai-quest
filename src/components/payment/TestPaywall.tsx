@@ -119,7 +119,7 @@ export function TestPaywall({ testSlug, testName, reason, expiresAt }: TestPaywa
             onClick={() => navigate('/tests')}
             className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mx-auto"
           >
-            가격 페이지에서 다른 검사도 보기
+            다른 검사 둘러보기
             <ArrowRight className="w-3 h-3" />
           </button>
         </CardContent>
