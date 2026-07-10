@@ -138,13 +138,13 @@ function TestCard({
         return <Button disabled variant="outline" size="sm" className="w-full">준비중</Button>;
       case "free":
         return (
-          <Button variant="outline" size="sm" className="w-full" onClick={() => hasQuestions && onNavigate(test.id)}>
+          <Button variant="outline" size="sm" className="w-full" disabled={!hasQuestions} onClick={() => onNavigate(test.id)}>
             무료로 응시하기
           </Button>
         );
       case "owned":
         return (
-          <Button variant="outline" size="sm" className="w-full" onClick={() => onNavigate(test.id)}>
+          <Button variant="outline" size="sm" className="w-full" disabled={!hasQuestions} onClick={() => onNavigate(test.id)}>
             검사 시작
           </Button>
         );
