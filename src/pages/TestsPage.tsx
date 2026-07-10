@@ -74,12 +74,6 @@ export default function TestsPage() {
         <p className="text-sm text-muted-foreground mt-1">나에게 맞는 검사를 선택해 보세요.</p>
       </div>
 
-      <div>
-        <Button variant="outline" size="sm" onClick={() => navigate("/pricing")}>
-          가격 보기
-        </Button>
-      </div>
-
       {/* 통합검사 게이트웨이 배너 */}
       {integratedTest && (
         <Card

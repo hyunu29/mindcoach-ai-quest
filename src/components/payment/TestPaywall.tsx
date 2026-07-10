@@ -116,7 +116,7 @@ export function TestPaywall({ testSlug, testName, reason, expiresAt }: TestPaywa
           )}
           <button
             type="button"
-            onClick={() => navigate('/pricing')}
+            onClick={() => navigate('/tests')}
             className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mx-auto"
           >
             가격 페이지에서 다른 검사도 보기

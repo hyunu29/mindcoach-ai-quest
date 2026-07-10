@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,7 +22,6 @@ import ProfilePage from "./pages/ProfilePage";
 import MockCheckoutPage from "./pages/MockCheckoutPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailPage from "./pages/PaymentFailPage";
-import PricingPage from "./pages/PricingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,7 +44,7 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/tests" element={<TestsPage />} />
-              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/pricing" element={<Navigate to="/tests" replace />} />
               <Route path="/tests/:id" element={<ProtectedRoute><TestTakingPage /></ProtectedRoute>} />
               <Route path="/results/:id" element={<ResultsPage />} />
               <Route path="/coaching" element={<ProtectedRoute><CoachingPage /></ProtectedRoute>} />
