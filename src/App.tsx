@@ -25,6 +25,7 @@ import PaymentFailPage from "./pages/PaymentFailPage";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminStudentDetailPage from "./pages/admin/AdminStudentDetailPage";
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="academy_admin">
                     <AdminStudentDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/settings"
+                element={
+                  <ProtectedRoute requiredUserType="academy_admin">
+                    <AdminSettingsPage />
                   </ProtectedRoute>
                 }
               />
