@@ -22,6 +22,8 @@ import ProfilePage from "./pages/ProfilePage";
 import MockCheckoutPage from "./pages/MockCheckoutPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailPage from "./pages/PaymentFailPage";
+import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +53,9 @@ const App = () => (
               <Route path="/emotion" element={<ProtectedRoute><EmotionPage /></ProtectedRoute>} />
               <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            </Route>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<ProtectedRoute requiredUserType="academy_admin"><AdminDashboardPage /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
