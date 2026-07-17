@@ -99,7 +99,7 @@ create or replace function public.calculate_academy_signals(p_academy_id uuid)
 returns table (
   user_id uuid,
   nickname text,
-  school_name text,
+  school text,
   grade text,
   risk_area_count integer,
   emotion_avg numeric,
@@ -122,7 +122,7 @@ begin
   select
     p.id as user_id,
     p.nickname,
-    p.school_name,
+    p.school,
     p.grade,
     s.risk_area_count,
     s.emotion_avg,

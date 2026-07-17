@@ -20,7 +20,7 @@ interface SignalRow {
 interface ProfileRow {
   id: string;
   nickname: string | null;
-  school_name: string | null;
+  school: string | null;
   grade: string | null;
   academy_id: string | null;
 }
@@ -83,7 +83,7 @@ export default function AdminStudentDetailPage() {
           };
         };
       })
-        .select('id, nickname, school_name, grade, academy_id')
+        .select('id, nickname, school, grade, academy_id')
         .eq('id', userId)
         .single();
       setProfile(pData);
@@ -195,7 +195,7 @@ export default function AdminStudentDetailPage() {
       <header>
         <h1 className="text-2xl font-bold">{profile.nickname ?? '(이름 미설정)'}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {profile.school_name}
+          {profile.school}
           {profile.grade && ` · ${profile.grade}`}
         </p>
       </header>

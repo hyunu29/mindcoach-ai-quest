@@ -6,7 +6,7 @@ export type Signal = 'green' | 'yellow' | 'red' | 'unassessed';
 export interface StudentSignalRow {
   user_id: string;
   nickname: string | null;
-  school_name: string | null;
+  school: string | null;
   grade: string | null;
   risk_area_count: number;
   emotion_avg: number | null;
