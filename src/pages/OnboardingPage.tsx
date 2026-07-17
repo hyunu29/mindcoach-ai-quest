@@ -8,6 +8,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { track } from '@/lib/analytics';
+import AcademyCodeInput from '@/components/academy/AcademyCodeInput';
+import type { AcademyLookup } from '@/components/academy/AcademyCodeInput';
+import PrivacyDisclosureModal from '@/components/academy/PrivacyDisclosureModal';
+import { useConnectAcademy } from '@/hooks/useConnectAcademy';
 
 const GRADES = ['중1', '중2', '중3', '고1', '고2', '고3', 'N수', '대학생', '일반'];
 
@@ -30,6 +34,10 @@ export default function OnboardingPage() {
   const [school, setSchool] = useState('');
   const [grade, setGrade] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [pendingAcademy, setPendingAcademy] = useState<AcademyLookup | null>(null);
+  const [selectedAcademy, setSelectedAcademy] = useState<AcademyLookup | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const { connect } = useConnectAcademy();
 
   useEffect(() => {
     if (loading) return;
@@ -75,6 +83,9 @@ export default function OnboardingPage() {
       return;
     }
     void track('onboarding_completed', { grade });
+    if (selectedAcademy) {
+      await connect(selectedAcademy.id);
+    }
     navigate('/dashboard', { replace: true });
   };
 
@@ -115,10 +126,49 @@ export default function OnboardingPage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-2">
+          <Label>학원 코드 (선택)</Label>
+          {selectedAcademy ? (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <div>
+                <div className="text-sm font-medium">{selectedAcademy.name}</div>
+                <div className="text-[10px] text-muted-foreground">연결 예약됨</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAcademy(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                취소
+              </button>
+            </div>
+          ) : (
+            <AcademyCodeInput
+              onFound={(a) => {
+                setPendingAcademy(a);
+                setPrivacyOpen(true);
+              }}
+              buttonLabel="확인"
+            />
+          )}
+        </div>
         <Button type="submit" disabled={submitting} className="w-full h-12 rounded-xl">
           시작하기
         </Button>
       </form>
+      <PrivacyDisclosureModal
+        open={privacyOpen}
+        academyName={pendingAcademy?.name ?? ''}
+        onConfirm={() => {
+          setSelectedAcademy(pendingAcademy);
+          setPrivacyOpen(false);
+          setPendingAcademy(null);
+        }}
+        onCancel={() => {
+          setPrivacyOpen(false);
+          setPendingAcademy(null);
+        }}
+      />
     </div>
   );
 }

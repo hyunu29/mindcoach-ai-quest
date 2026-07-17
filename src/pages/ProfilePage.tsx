@@ -13,6 +13,9 @@ import { useCharacter } from "@/hooks/useCharacter";
 import { CharacterSelectModal } from "@/components/character/CharacterSelectModal";
 import { BREED_PERSONAS, type Breed } from "@/lib/character/types";
 import { getCharacterCardUrl } from "@/lib/character/asset-url";
+import AcademyCodeInput, { type AcademyLookup } from "@/components/academy/AcademyCodeInput";
+import PrivacyDisclosureModal from "@/components/academy/PrivacyDisclosureModal";
+import { useConnectAcademy } from "@/hooks/useConnectAcademy";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
@@ -38,6 +41,14 @@ export default function ProfilePage() {
   } = useCharacter();
   const [characterModalOpen, setCharacterModalOpen] = useState(false);
 
+  // Academy connection
+  const [academyId, setAcademyId] = useState<string | null>(null);
+  const [academyName, setAcademyName] = useState<string | null>(null);
+  const [academyJoinedAt, setAcademyJoinedAt] = useState<string | null>(null);
+  const [pendingAcademy, setPendingAcademy] = useState<AcademyLookup | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const { connect, connecting } = useConnectAcademy();
+
   const handleCharacterSelect = async (breed: Breed) => {
     const source: 'recommended' | 'free' | 'changed' =
       breed === recommendedBreed
@@ -61,11 +72,34 @@ export default function ProfilePage() {
         setNickname(data.nickname || "");
         setSchoolType(data.school_type || "");
         setGrade(data.grade || "");
+        const d = data as { academy_id?: string | null; academy_joined_at?: string | null };
+        setAcademyId(d.academy_id ?? null);
+        setAcademyJoinedAt(d.academy_joined_at ?? null);
       }
       setLoading(false);
     };
     fetchProfile();
   }, [user]);
+
+  useEffect(() => {
+    if (!academyId) {
+      setAcademyName(null);
+      return;
+    }
+    void (async () => {
+      const { data } = await (supabase.from('academies') as unknown as {
+        select: (cols: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => Promise<{ data: { name: string } | null }>;
+          };
+        };
+      })
+        .select('name')
+        .eq('id', academyId)
+        .maybeSingle();
+      if (data) setAcademyName(data.name);
+    })();
+  }, [academyId]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -260,6 +294,60 @@ export default function ProfilePage() {
           </div>
         )}
       </Card>
+
+      {/* Academy connection */}
+      <Card className="p-5 rounded-2xl border-border/50 shadow-sm space-y-3">
+        <h2 className="font-bold">학원 연결</h2>
+        {academyId && academyName ? (
+          <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
+            <div>
+              <div className="text-sm font-medium">{academyName}</div>
+              <div className="text-[10px] text-muted-foreground">
+                {academyJoinedAt
+                  ? `${new Date(academyJoinedAt).toLocaleDateString('ko-KR')} 연결`
+                  : '연결됨'}
+              </div>
+            </div>
+            <span className="text-xs text-primary font-medium">연결됨</span>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground">
+              학원에서 받은 코드를 입력하면 학원 관리자가 심리 신호로 여러분을 챙길 수 있어요.
+            </p>
+            <AcademyCodeInput
+              onFound={(a) => {
+                setPendingAcademy(a);
+                setPrivacyOpen(true);
+              }}
+            />
+          </>
+        )}
+      </Card>
+
+      <PrivacyDisclosureModal
+        open={privacyOpen}
+        academyName={pendingAcademy?.name ?? ''}
+        loading={connecting}
+        onConfirm={async () => {
+          if (!pendingAcademy) return;
+          const ok = await connect(pendingAcademy.id);
+          if (ok) {
+            setAcademyId(pendingAcademy.id);
+            setAcademyName(pendingAcademy.name);
+            setAcademyJoinedAt(new Date().toISOString());
+            toast.success(`${pendingAcademy.name}에 연결됐어요`);
+            setPrivacyOpen(false);
+            setPendingAcademy(null);
+          } else {
+            toast.error('연결에 실패했어요. 다시 시도해 주세요.');
+          }
+        }}
+        onCancel={() => {
+          setPrivacyOpen(false);
+          setPendingAcademy(null);
+        }}
+      />
 
       {/* Menu Items */}
       <div className="space-y-2">
