@@ -24,6 +24,7 @@ import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailPage from "./pages/PaymentFailPage";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminStudentDetailPage from "./pages/admin/AdminStudentDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,14 @@ const App = () => (
             </Route>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<ProtectedRoute requiredUserType="academy_admin"><AdminDashboardPage /></ProtectedRoute>} />
+              <Route
+                path="/admin/students/:id"
+                element={
+                  <ProtectedRoute requiredUserType="academy_admin">
+                    <AdminStudentDetailPage />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
