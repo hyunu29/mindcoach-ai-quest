@@ -9,9 +9,10 @@ type ProfileGuard = { user_type: string | null; onboarded_at: string | null };
 interface Props {
   children: React.ReactNode;
   requiredUserType?: 'student' | 'academy_admin' | 'super_admin';
+  allowAdmin?: boolean;
 }
 
-export default function ProtectedRoute({ children, requiredUserType }: Props) {
+export default function ProtectedRoute({ children, requiredUserType, allowAdmin }: Props) {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [profileChecked, setProfileChecked] = useState(false);
@@ -45,15 +46,15 @@ export default function ProtectedRoute({ children, requiredUserType }: Props) {
             else setRedirectTo('/dashboard');
           }
         } else {
-          // 기본 원생용 페이지: admin은 admin 홈으로 강제
-          if (userType === 'academy_admin') setRedirectTo('/admin');
-          else if (userType === 'super_admin') setRedirectTo('/sysadmin');
-          else if (!data?.onboarded_at) setRedirectTo('/onboarding');
+          // 기본 원생용 페이지: allowAdmin이 아닌 경우에만 admin 홈으로 강제
+          if (userType === 'academy_admin' && !allowAdmin) setRedirectTo('/admin');
+          else if (userType === 'super_admin' && !allowAdmin) setRedirectTo('/sysadmin');
+          else if (userType === 'student' && !data?.onboarded_at) setRedirectTo('/onboarding');
         }
         setProfileChecked(true);
       })
       .catch(() => setProfileChecked(true));
-  }, [user, loading, requiredUserType]);
+  }, [user, loading, requiredUserType, allowAdmin]);
 
   if (loading || !profileChecked) {
     return (

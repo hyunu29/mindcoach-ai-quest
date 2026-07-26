@@ -49,10 +49,10 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/tests" element={<TestsPage />} />
               <Route path="/pricing" element={<Navigate to="/tests" replace />} />
-              <Route path="/tests/:id" element={<ProtectedRoute><TestTakingPage /></ProtectedRoute>} />
+              <Route path="/tests/:id" element={<ProtectedRoute allowAdmin><TestTakingPage /></ProtectedRoute>} />
               <Route path="/results/:id" element={<ResultsPage />} />
-              <Route path="/coaching" element={<ProtectedRoute><CoachingPage /></ProtectedRoute>} />
-              <Route path="/emotion" element={<ProtectedRoute><EmotionPage /></ProtectedRoute>} />
+              <Route path="/coaching" element={<ProtectedRoute allowAdmin><CoachingPage /></ProtectedRoute>} />
+              <Route path="/emotion" element={<ProtectedRoute allowAdmin><EmotionPage /></ProtectedRoute>} />
               <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             </Route>
