@@ -16,6 +16,7 @@ import { getCharacterCardUrl } from "@/lib/character/asset-url";
 import AcademyCodeInput, { type AcademyLookup } from "@/components/academy/AcademyCodeInput";
 import PrivacyDisclosureModal from "@/components/academy/PrivacyDisclosureModal";
 import { useConnectAcademy } from "@/hooks/useConnectAcademy";
+import { useAcademyVouchers } from "@/hooks/useAcademyVouchers";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
@@ -48,6 +49,7 @@ export default function ProfilePage() {
   const [pendingAcademy, setPendingAcademy] = useState<AcademyLookup | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const { connect, connecting } = useConnectAcademy();
+  const { count: voucherCount, refresh: refreshVouchers } = useAcademyVouchers();
 
   const handleCharacterSelect = async (breed: Breed) => {
     const source: 'recommended' | 'free' | 'changed' =
@@ -299,17 +301,23 @@ export default function ProfilePage() {
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm space-y-3">
         <h2 className="font-bold">학원 연결</h2>
         {academyId && academyName ? (
-          <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
-            <div>
-              <div className="text-sm font-medium">{academyName}</div>
-              <div className="text-[10px] text-muted-foreground">
-                {academyJoinedAt
-                  ? `${new Date(academyJoinedAt).toLocaleDateString('ko-KR')} 연결`
-                  : '연결됨'}
+          <>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <div>
+                <div className="text-sm font-medium">{academyName}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {academyJoinedAt
+                    ? `${new Date(academyJoinedAt).toLocaleDateString('ko-KR')} 연결`
+                    : '연결됨'}
+                </div>
               </div>
+              <span className="text-xs text-primary font-medium">연결됨</span>
             </div>
-            <span className="text-xs text-primary font-medium">연결됨</span>
-          </div>
+            <div className="flex items-center justify-between text-xs pt-2">
+              <span className="text-muted-foreground">사용 가능 무료 이용권</span>
+              <span className="font-medium">{voucherCount}개</span>
+            </div>
+          </>
         ) : (
           <>
             <p className="text-xs text-muted-foreground">
@@ -336,6 +344,7 @@ export default function ProfilePage() {
             setAcademyId(pendingAcademy.id);
             setAcademyName(pendingAcademy.name);
             setAcademyJoinedAt(new Date().toISOString());
+            void refreshVouchers();
             toast.success(`${pendingAcademy.name}에 연결됐어요`);
             setPrivacyOpen(false);
             setPendingAcademy(null);
