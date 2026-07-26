@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SINGLE_TEST_DISPLAY, PRO_PLAN_DISPLAY } from "@/lib/payments/catalog-display";
 import { usePurchase } from "@/hooks/usePurchase";
 import { useUserTestAccess } from "@/hooks/useUserTestAccess";
+import { useAcademyVouchers } from "@/hooks/useAcademyVouchers";
 import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 
@@ -95,12 +96,16 @@ function TestCard({
   state,
   onNavigate,
   onPurchase,
+  onRedeemVoucher,
   purchasing,
+  voucherCount,
 }: {
   state: CardState;
   onNavigate: (id: string) => void;
   onPurchase: (t: TestRow) => void;
+  onRedeemVoucher: (t: TestRow) => void;
   purchasing: boolean;
+  voucherCount: number;
 }) {
   const { test } = state;
   const hasQuestions = Array.isArray(test.questions) && test.questions.length > 0;
@@ -150,9 +155,21 @@ function TestCard({
         );
       case "paid":
         return (
-          <Button size="sm" className="w-full" disabled={purchasing} onClick={() => onPurchase(test)}>
-            {purchasing ? (<><Loader2 className="w-4 h-4 animate-spin mr-1.5" /> 결제창 준비 중...</>) : "구매하기"}
-          </Button>
+          <>
+            {voucherCount > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full mb-2"
+                onClick={() => onRedeemVoucher(test)}
+              >
+                🎁 이용권으로 응시 ({voucherCount})
+              </Button>
+            )}
+            <Button size="sm" className="w-full" disabled={purchasing} onClick={() => onPurchase(test)}>
+              {purchasing ? (<><Loader2 className="w-4 h-4 animate-spin mr-1.5" /> 결제창 준비 중...</>) : "구매하기"}
+            </Button>
+          </>
         );
       default:
         return null;
@@ -207,9 +224,20 @@ export default function TestsPage() {
   const navigate = useNavigate();
   const { purchase, isLoading: isPurchasing } = usePurchase();
   const { accessMap } = useUserTestAccess();
+  const { count: voucherCount, redeem: redeemVoucher } = useAcademyVouchers();
   const [tests, setTests] = useState<TestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
+
+  const handleRedeem = async (t: TestRow) => {
+    const ok = await redeemVoucher(t.id);
+    if (ok) {
+      toast.success('이용권을 사용했어요');
+      navigate(`/tests/${t.id}`);
+    } else {
+      toast.error('이용권을 사용할 수 없어요');
+    }
+  };
 
   useEffect(() => {
     void track("tests_viewed");
@@ -281,7 +309,9 @@ export default function TestsPage() {
                 state={getCardState(test, priceMap, accessMap)}
                 onNavigate={(id) => navigate(`/tests/${id}`)}
                 onPurchase={() => { /* free tests: no purchase */ }}
+                onRedeemVoucher={handleRedeem}
                 purchasing={false}
+                voucherCount={voucherCount}
               />
             ))}
           </div>
@@ -335,7 +365,9 @@ export default function TestsPage() {
                       productName: t.name,
                     })
                   }
+                  onRedeemVoucher={handleRedeem}
                   purchasing={isPurchasing(test.id)}
+                  voucherCount={voucherCount}
                 />
               );
             })}
