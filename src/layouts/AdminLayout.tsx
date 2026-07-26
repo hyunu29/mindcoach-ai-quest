@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { LayoutDashboard, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, ClipboardCheck, MessageCircle } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +31,26 @@ export default function AdminLayout() {
           >
             <Settings className="w-4 h-4" />
             학원 정보
+          </NavLink>
+
+          <div className="mt-4 mb-1 px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            체험
+          </div>
+          <NavLink
+            to="/tests"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            activeClassName="bg-primary/10 text-primary"
+          >
+            <ClipboardCheck className="w-4 h-4" />
+            심리검사 체험
+          </NavLink>
+          <NavLink
+            to="/coaching"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            activeClassName="bg-primary/10 text-primary"
+          >
+            <MessageCircle className="w-4 h-4" />
+            AI 코칭 체험
           </NavLink>
         </nav>
         <button
