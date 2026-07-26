@@ -27,13 +27,20 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const { data, error } = await supabase.rpc("grant_weekly_pro_benefits");
-  if (error) {
-    console.error("weekly-grant rpc error", error);
-    return json(500, { error: error.message });
+  const { data: proData, error: proErr } = await supabase.rpc("grant_weekly_pro_benefits");
+  if (proErr) {
+    console.error("pro rpc error", proErr);
+    return json(500, { error: proErr.message });
   }
+  const proGranted = Array.isArray(proData) && proData.length > 0 ? proData[0].granted_count : 0;
 
-  const granted = Array.isArray(data) && data.length > 0 ? data[0].granted_count : 0;
-  console.log("weekly-grant success", { granted });
-  return json(200, { ok: true, granted });
+  const { data: acData, error: acErr } = await supabase.rpc("grant_weekly_academy_benefits");
+  if (acErr) {
+    console.error("academy rpc error", acErr);
+    return json(500, { error: acErr.message });
+  }
+  const academyGranted = Array.isArray(acData) && acData.length > 0 ? acData[0].granted_count : 0;
+
+  console.log("weekly-grant success", { proGranted, academyGranted });
+  return json(200, { ok: true, pro: proGranted, academy: academyGranted });
 });
