@@ -17,11 +17,20 @@ export function useConnectAcademy() {
         academy_joined_at: new Date().toISOString(),
       })
       .eq('id', user.id);
-    setConnecting(false);
     if (!error) {
+      // 환영 팩 지급 (이용권 3장 + 크레딧 20). 실패해도 연결 자체는 성공 처리.
+      await (supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ error: unknown }>)('grant_academy_welcome_pack', {
+        p_user_id: user.id,
+        p_academy_id: academyId,
+      });
       void track('academy_connected', { academy_id: academyId });
+      setConnecting(false);
       return true;
     }
+    setConnecting(false);
     return false;
   };
 
