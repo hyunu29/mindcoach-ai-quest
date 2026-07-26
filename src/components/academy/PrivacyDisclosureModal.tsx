@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Check, Lock } from 'lucide-react';
+import { Check, Lock, Gift } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -54,6 +54,17 @@ export default function PrivacyDisclosureModal({
               <li>감정 메모 원문</li>
               <li>AI 코칭 대화 내용</li>
               <li>개별 문항 응답 답변</li>
+            </ul>
+          </div>
+
+          <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+              <Gift className="w-4 h-4" /> 연결 즉시 지급되는 혜택
+            </p>
+            <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground ml-6 list-disc">
+              <li>유료 검사 무료 이용권 3장 (30일 유효)</li>
+              <li>AI 코칭 크레딧 20개</li>
+              <li>매주 유료 검사 이용권 1장 + 크레딧 5개 추가 지급</li>
             </ul>
           </div>
         </div>
