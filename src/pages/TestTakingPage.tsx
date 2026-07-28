@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { getRiskLevel } from "@/data/seed-data";
@@ -12,12 +12,12 @@ import { TestAccessGate } from "@/components/payment/TestAccessGate";
 import { track } from "@/lib/analytics";
 import { isFreeTest } from "@/lib/payments/free-tests";
 
-const likertOptions = [
-  { score: 1, label: "전혀 그렇지 않다" },
-  { score: 2, label: "그렇지 않다" },
-  { score: 3, label: "보통이다" },
-  { score: 4, label: "그렇다" },
-  { score: 5, label: "매우 그렇다" },
+const DEFAULT_LIKERT_LABELS = [
+  "전혀 그렇지 않다",
+  "그렇지 않다",
+  "보통이다",
+  "그렇다",
+  "매우 그렇다",
 ];
 
 interface QuestionItem {
@@ -39,6 +39,9 @@ interface TestData {
   is_recommended: boolean;
   is_coming_soon: boolean;
   is_integrated?: boolean;
+  likert_min?: number;
+  likert_max?: number;
+  likert_labels?: string[] | null;
   subdomains: string[];
   questions: QuestionItem[];
 }
@@ -110,6 +113,16 @@ export default function TestTakingPage() {
   };
 
   const questions = test?.questions || [];
+  const likertOptions = useMemo(() => {
+    const min = test?.likert_min ?? 1;
+    const max = test?.likert_max ?? 5;
+    const labels = test?.likert_labels;
+    const count = max - min + 1;
+    return Array.from({ length: count }, (_, i) => ({
+      score: min + i,
+      label: labels?.[i] ?? DEFAULT_LIKERT_LABELS[i] ?? `${min + i}점`,
+    }));
+  }, [test]);
   const handleSelect = (score: number) => {
     setAnswers((prev) => ({ ...prev, [current]: score }));
   };
@@ -143,10 +156,13 @@ export default function TestTakingPage() {
         recommendations = result.recommendations;
       } else {
         // 일반 전문검사: 20문항 / 100점 만점 기준 위험도
+        const likertMin = test.likert_min ?? 1;
+        const likertMax = test.likert_max ?? 5;
+        const defaultAnswer = Math.floor((likertMin + likertMax) / 2);
         const subdomainMap: Record<string, { total: number; count: number }> = {};
         questions.forEach((q, i) => {
-          const raw = answers[i] || 3;
-          const score = q.isReversed ? (6 - raw) : raw;
+          const raw = answers[i] ?? defaultAnswer;
+          const score = q.isReversed ? (likertMax + likertMin - raw) : raw;
           if (!subdomainMap[q.subdomain]) {
             subdomainMap[q.subdomain] = { total: 0, count: 0 };
           }
