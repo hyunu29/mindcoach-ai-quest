@@ -245,6 +245,7 @@ export default function TestsPage() {
       const { data } = await supabase
         .from("tests")
         .select("*")
+        .eq("is_staff_only", false)
         .order("is_coming_soon", { ascending: true })
         .order("category")
         .order("id");
