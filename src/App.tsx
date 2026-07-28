@@ -26,6 +26,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminStudentDetailPage from "./pages/admin/AdminStudentDetailPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+import StaffTestIntroPage from "./pages/admin/StaffTestIntroPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredUserType="academy_admin">
                     <AdminSettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/staff-test"
+                element={
+                  <ProtectedRoute requiredUserType="academy_admin">
+                    <StaffTestIntroPage />
                   </ProtectedRoute>
                 }
               />
