@@ -43,6 +43,17 @@ const RISK_COLORS: Record<string, { color: string; bgColor: string }> = {
   danger: { color: "#EF4444", bgColor: "#FEF2F2" },
 };
 
+const STAFF_INTERPRETATIONS = [
+  { min: 0, max: 22, level: 'safe' as const, label: '정상범위', message: '현재 직무 스트레스를 적절하게 관리하고 계십니다. 주기적인 휴식과 환기로 건강한 상태 유지가 필요합니다.' },
+  { min: 23, max: 44, level: 'caution' as const, label: '경도 우울 및 경미한 번아웃', message: '직무 관련 스트레스와 감정 소모가 누적되고 있습니다. 휴식시간을 늘리고, 동료나 주변 사람들과 힘듦을 공유하는 것이 좋습니다.' },
+  { min: 45, max: 66, level: 'warning' as const, label: '중증도 우울 및 심각한 번아웃', message: '높은 수준의 우울감과 피로를 겪고 있습니다. 업무 우선순위를 조정하고, 전문 상담이나 심리적 지원 조치가 필요합니다.' },
+  { min: 67, max: 90, level: 'danger' as const, label: '고도 우울 위험군', message: '즉각적인 휴식과 전문적인 치료가 강력하게 권장됩니다.' },
+];
+
+function getStaffInterpretation(totalScore: number) {
+  return STAFF_INTERPRETATIONS.find((r) => totalScore >= r.min && totalScore <= r.max) ?? STAFF_INTERPRETATIONS[0];
+}
+
 interface DomainRecommendation {
   domain: string;
   domainName: string;
@@ -410,19 +421,40 @@ export default function ResultsPage() {
         onSelect={handleCharacterSelect}
       />
 
-      {/* Total Score & Risk */}
-      <Card className="p-5 rounded-2xl border-border/50 shadow-sm text-center">
-        <div className="text-sm text-muted-foreground mb-2">종합 점수</div>
-        <div className="text-4xl font-extrabold gradient-text mb-1">{result.totalScore}</div>
-        <div className="text-xs text-muted-foreground mb-3">/ {maxTotal}점</div>
-        <Badge
-          className="border-0 text-xs font-semibold px-3 py-1"
-          style={{ backgroundColor: riskPalette.bgColor, color: riskPalette.color }}
-        >
-          {riskLabel}
-        </Badge>
-        <p className="text-xs text-muted-foreground mt-3 leading-relaxed">{integratedDescription}</p>
-      </Card>
+      {/* STAFF-1 interpretation card (4-band) */}
+      {result.testId === 'STAFF-1' && (() => {
+        const interp = getStaffInterpretation(result.totalScore);
+        const badgeColor =
+          interp.level === 'safe' ? 'bg-green-500' :
+          interp.level === 'caution' ? 'bg-yellow-500' :
+          interp.level === 'warning' ? 'bg-orange-500' :
+          'bg-red-500';
+        return (
+          <Card className="p-5 rounded-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge className={`text-xs ${badgeColor} text-white border-0`}>{interp.label}</Badge>
+              <span className="text-sm text-muted-foreground">총점 {result.totalScore} / 90</span>
+            </div>
+            <p className="text-sm leading-relaxed">{interp.message}</p>
+          </Card>
+        );
+      })()}
+
+      {/* Total Score & Risk (skipped for STAFF-1) */}
+      {result.testId !== 'STAFF-1' && (
+        <Card className="p-5 rounded-2xl border-border/50 shadow-sm text-center">
+          <div className="text-sm text-muted-foreground mb-2">종합 점수</div>
+          <div className="text-4xl font-extrabold gradient-text mb-1">{result.totalScore}</div>
+          <div className="text-xs text-muted-foreground mb-3">/ {maxTotal}점</div>
+          <Badge
+            className="border-0 text-xs font-semibold px-3 py-1"
+            style={{ backgroundColor: riskPalette.bgColor, color: riskPalette.color }}
+          >
+            {riskLabel}
+          </Badge>
+          <p className="text-xs text-muted-foreground mt-3 leading-relaxed">{integratedDescription}</p>
+        </Card>
+      )}
 
       {/* Gateway Message (Integrated only) */}
       {isIntegrated && topDomainScore && topDomainScore.isHigh && (
