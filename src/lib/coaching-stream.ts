@@ -1,4 +1,5 @@
 import { ChatMessage } from "./coaching-types";
+import { supabase } from "@/integrations/supabase/client";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-coaching`;
 
@@ -27,11 +28,20 @@ export async function streamCoachingChat({
   onDone,
   onError,
 }: StreamChatParams) {
+  // 서버가 사용자 JWT로 인증/크레딧 차감하므로 세션 access token 필수
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) {
+    onError("로그인이 필요합니다.");
+    return;
+  }
+
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      Authorization: `Bearer ${accessToken}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
