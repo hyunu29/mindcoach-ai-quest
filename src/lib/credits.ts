@@ -22,8 +22,8 @@ export async function fetchCurrentCredits(userId: string): Promise<CreditState |
   }
   if (!data) return { creditId: null, remaining: 0, granted: 0 };
 
-  const granted = data.credits_granted ?? 0;
-  const used = data.credits_used ?? 0;
+  const granted = Number(data.credits_granted ?? 0);
+  const used = Number(data.credits_used ?? 0);
   return {
     creditId: data.id,
     granted,
@@ -31,22 +31,10 @@ export async function fetchCurrentCredits(userId: string): Promise<CreditState |
   };
 }
 
-export interface ConsumeResult {
-  success: boolean;
-  creditId: string | null;
-  remaining: number;
+export function formatCredits(remaining: number): string {
+  return remaining % 1 === 0 ? String(remaining) : remaining.toFixed(1);
 }
 
-export async function consumeAiCredit(cost = 1): Promise<ConsumeResult> {
-  const { data, error } = await supabase.rpc("consume_ai_credit", { p_cost: cost });
-  if (error) {
-    console.error("consume_ai_credit error:", error);
-    return { success: false, creditId: null, remaining: 0 };
-  }
-  const row = Array.isArray(data) ? data[0] : data;
-  return {
-    success: !!row?.success,
-    creditId: row?.credit_id ?? null,
-    remaining: row?.remaining ?? 0,
-  };
+export function estimateConversations(remaining: number): number {
+  return Math.floor(remaining);
 }

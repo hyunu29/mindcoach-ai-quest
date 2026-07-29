@@ -16,7 +16,7 @@ import { streamCoachingChat } from "@/lib/coaching-stream";
 import type { ChatMessage, DbSession } from "@/lib/coaching-types";
 import { runAgentActions, type AgentDecision } from "@/services/agentEngine";
 import { getRecentEmotions, buildEmotionSummary } from "@/services/agentActions";
-import { fetchCurrentCredits, consumeAiCredit, type CreditState } from "@/lib/credits";
+import { fetchCurrentCredits, formatCredits, estimateConversations, type CreditState } from "@/lib/credits";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
@@ -144,14 +144,6 @@ export default function CoachingPage() {
 
   const generateFirstMessage = async (sessionId: string, syndrome: string | null, existingMsgs: ChatMessage[]) => {
     if (!userId) return;
-    const consume = await consumeAiCredit(1);
-    if (!consume.success) {
-      setShowUpgradeModal(true);
-      toast({ title: "크레딧 부족으로 자동 인사를 생략했습니다", variant: "destructive" });
-      return;
-    }
-    const usedCreditId = consume.creditId;
-    setCredits((prev) => ({ ...prev, creditId: usedCreditId ?? prev.creditId, remaining: consume.remaining }));
     setIsTyping(true);
     let aiContent = "";
     const syndromeCtx = getSyndromeContext(syndrome);
@@ -173,7 +165,7 @@ export default function CoachingPage() {
         await supabase.from("ai_usage_log").insert({
           user_id: userId,
           session_id: sessionId,
-          credit_id: usedCreditId,
+          credit_id: null,
           cost: 1,
           tokens_in: null,
           tokens_out: null,
@@ -183,7 +175,11 @@ export default function CoachingPage() {
       },
       onError: (err) => {
         setIsTyping(false);
-        // TODO: refund credit on stream error
+        if (err === "INSUFFICIENT_CREDITS") {
+          setShowUpgradeModal(true);
+          toast({ title: "크레딧이 모두 소진됐어요", description: "다음 충전을 기다리거나 Pro를 구독해 보세요.", variant: "destructive" });
+          return;
+        }
         const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 마이치입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
         setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s));
         toast({ title: "AI 연결 오류", description: err, variant: "destructive" });
@@ -198,14 +194,6 @@ export default function CoachingPage() {
       setShowUpgradeModal(true);
       return;
     }
-
-    const consume = await consumeAiCredit(1);
-    if (!consume.success) {
-      setShowUpgradeModal(true);
-      return;
-    }
-    const usedCreditId = consume.creditId;
-    setCredits((prev) => ({ ...prev, creditId: usedCreditId ?? prev.creditId, remaining: consume.remaining }));
 
     const text = input.trim();
 
@@ -291,7 +279,7 @@ export default function CoachingPage() {
         await supabase.from("ai_usage_log").insert({
           user_id: userId,
           session_id: currentSessionId,
-          credit_id: usedCreditId,
+          credit_id: null,
           cost: 1,
           tokens_in: null,
           tokens_out: null,
@@ -299,9 +287,18 @@ export default function CoachingPage() {
         });
         await refreshCredits(userId);
       },
-      onError: (err) => {
+      onError: async (err) => {
         setIsTyping(false);
-        // TODO: refund credit on stream error
+        if (err === "INSUFFICIENT_CREDITS") {
+          setShowUpgradeModal(true);
+          toast({ title: "크레딧이 모두 소진됐어요", description: "다음 충전을 기다리거나 Pro를 구독해 보세요.", variant: "destructive" });
+          // abort gracefully: restore input, revert the optimistic user message
+          setInput(text);
+          setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages } : s));
+          await supabase.from("coaching_sessions").update({ messages: messages as any, updated_at: new Date().toISOString() }).eq("id", currentSessionId);
+          await refreshCredits(userId);
+          return;
+        }
         const fallbackMsg: ChatMessage = { role: "ai", content: "죄송합니다, 일시적으로 응답을 생성하지 못했어요. 다시 시도해 주세요. 🙏", timestamp: new Date().toISOString() };
         const finalMsgs = [...updatedMsgs, fallbackMsg];
         setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages: finalMsgs } : s));
@@ -415,10 +412,11 @@ export default function CoachingPage() {
                 ? "bg-amber-100 text-amber-700 border-amber-200"
                 : "bg-primary/10 text-primary border-primary/20"
             }`}
-            title="AI 코칭 크레딧"
+            title={`AI 코칭 크레딧 · 대화 약 ${estimateConversations(credits.remaining)}회 가능`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>AI 크레딧 {credits.remaining} / {credits.granted}</span>
+            <span>AI 크레딧 {formatCredits(credits.remaining)} / {credits.granted}</span>
+            <span className="hidden sm:inline text-[10px] font-normal opacity-70">(대화 약 {estimateConversations(credits.remaining)}회)</span>
           </button>
         </div>
 
