@@ -41,6 +41,14 @@ serve(async (req) => {
   }
   const academyGranted = Array.isArray(acData) && acData.length > 0 ? acData[0].granted_count : 0;
 
-  console.log("weekly-grant success", { proGranted, academyGranted });
-  return json(200, { ok: true, pro: proGranted, academy: academyGranted });
+  // free 사용자 월간 크레딧 재발급 (period 만료된 사용자 대상)
+  const { data: freeData, error: freeErr } = await supabase.rpc("grant_monthly_free_credits");
+  if (freeErr) {
+    console.error("free rpc error", freeErr);
+    return json(500, { error: freeErr.message });
+  }
+  const freeGranted = Array.isArray(freeData) && freeData.length > 0 ? freeData[0].granted_count : 0;
+
+  console.log("weekly-grant success", { proGranted, academyGranted, freeGranted });
+  return json(200, { ok: true, pro: proGranted, academy: academyGranted, free: freeGranted });
 });
