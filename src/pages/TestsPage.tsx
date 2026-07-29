@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SINGLE_TEST_DISPLAY, PRO_PLAN_DISPLAY } from "@/lib/payments/catalog-display";
 import { usePurchase } from "@/hooks/usePurchase";
 import { useUserTestAccess } from "@/hooks/useUserTestAccess";
+import { useMySubscription } from "@/hooks/useMySubscription";
 import { useAcademyVouchers } from "@/hooks/useAcademyVouchers";
 import { track } from "@/lib/analytics";
 import { toast } from "sonner";
@@ -225,6 +226,7 @@ export default function TestsPage() {
   const { purchase, isLoading: isPurchasing } = usePurchase();
   const { accessMap } = useUserTestAccess();
   const { count: voucherCount, redeem: redeemVoucher } = useAcademyVouchers();
+  const { subscription } = useMySubscription();
   const [tests, setTests] = useState<TestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -380,8 +382,17 @@ export default function TestsPage() {
       <section className="space-y-3">
         <h2 className="text-lg md:text-xl font-bold">멤버십</h2>
         <Card
-          className="p-5 md:p-6 rounded-2xl border-2 border-primary/20 bg-card shadow-sm cursor-pointer hover:shadow-md transition-all"
-          onClick={() => toast.info("Pro 멤버십은 준비 중입니다", { description: "곧 만나보실 수 있어요." })}
+          className={`p-5 md:p-6 rounded-2xl border-2 border-primary/20 bg-card shadow-sm transition-all ${
+            subscription ? "" : "cursor-pointer hover:shadow-md"
+          }`}
+          onClick={() => {
+            if (subscription) return;
+            purchase({
+              productType: "pro_subscription",
+              productId: "pro-monthly",
+              productName: "Pro 멤버십",
+            });
+          }}
         >
           <div className="flex items-start gap-3 md:gap-4">
             <div className="w-11 h-11 md:w-12 md:h-12 rounded-xl gradient-primary flex items-center justify-center shrink-0">
@@ -390,7 +401,13 @@ export default function TestsPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-bold text-base md:text-lg">{PRO_PLAN_DISPLAY.name}</h3>
-                <Badge variant="outline" className="text-[10px]">곧 출시</Badge>
+                {subscription ? (
+                  <Badge className="bg-primary/10 text-primary border-0 text-[10px]">
+                    구독 중 · D-{subscription.daysRemaining}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px]">₩9,900/월</Badge>
+                )}
               </div>
               <p className="text-xs md:text-sm text-muted-foreground mt-1">{PRO_PLAN_DISPLAY.description}</p>
               <ul className="mt-3 space-y-1.5 text-xs md:text-sm text-muted-foreground">
