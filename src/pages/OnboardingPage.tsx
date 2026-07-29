@@ -48,14 +48,23 @@ export default function OnboardingPage() {
     void (supabase.from('profiles') as unknown as {
       select: (cols: string) => {
         eq: (col: string, val: string) => {
-          single: () => Promise<{ data: { onboarded_at: string | null } | null }>;
+          single: () => Promise<{ data: { onboarded_at: string | null; user_type: string | null } | null }>;
         };
       };
     })
-      .select('onboarded_at')
+      .select('onboarded_at, user_type')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
+        // 학원 관리자/시스템 어드민은 원생 온보딩 흐름을 건너뜀
+        if (data?.user_type === 'academy_admin') {
+          navigate('/admin', { replace: true });
+          return;
+        }
+        if (data?.user_type === 'super_admin') {
+          navigate('/sysadmin', { replace: true });
+          return;
+        }
         if (data?.onboarded_at) navigate('/dashboard', { replace: true });
       });
   }, [user, loading, navigate]);
