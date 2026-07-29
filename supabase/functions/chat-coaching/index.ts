@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,17 @@ const SYSTEM_PROMPT = `당신은 "마이치"입니다. 수험생(중·고등학�
 
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 
+const WEIGHTED_TOKENS_PER_CREDIT = 5000;
+const OUTPUT_WEIGHT = 8;
+const MIN_COST = 0.1;
+
+function json(status: number, body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,6 +60,31 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY is not configured");
+    }
+
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const jwt = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: userData, error: userErr } = await admin.auth.getUser(jwt);
+    if (userErr || !userData?.user) {
+      return json(401, { error: "UNAUTHORIZED" });
+    }
+    const userId = userData.user.id;
+
+    const { data: remainingData, error: remErr } = await admin.rpc("get_remaining_credits", {
+      p_user_id: userId,
+    });
+    if (remErr) {
+      console.error("get_remaining_credits error", remErr);
+      return json(500, { error: "CREDIT_CHECK_FAILED" });
+    }
+    const remaining = Number(remainingData ?? 0);
+    if (remaining <= 0) {
+      return json(402, { error: "INSUFFICIENT_CREDITS" });
     }
 
     const { messages, syndrome_context, test_result_summary, emotion_summary } = await req.json();
@@ -88,6 +125,7 @@ serve(async (req) => {
             ...aiMessages,
           ],
           stream: true,
+          stream_options: { include_usage: true },
         }),
       }
     );
@@ -113,7 +151,49 @@ serve(async (req) => {
       });
     }
 
-    return new Response(response.body, {
+    let sseBuffer = "";
+    let promptTokens = 0;
+    let completionTokens = 0;
+    const decoder = new TextDecoder();
+
+    const usageTap = new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+        sseBuffer += decoder.decode(chunk, { stream: true });
+        let idx: number;
+        while ((idx = sseBuffer.indexOf("\n")) >= 0) {
+          const line = sseBuffer.slice(0, idx).trim();
+          sseBuffer = sseBuffer.slice(idx + 1);
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (payload === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.usage) {
+              promptTokens = parsed.usage.prompt_tokens ?? promptTokens;
+              completionTokens = parsed.usage.completion_tokens ?? completionTokens;
+            }
+          } catch {
+            // partial line — ignore
+          }
+        }
+      },
+      async flush() {
+        const weighted = promptTokens + completionTokens * OUTPUT_WEIGHT;
+        const cost = Math.max(
+          MIN_COST,
+          Math.round((weighted / WEIGHTED_TOKENS_PER_CREDIT) * 100) / 100,
+        );
+        const { error } = await admin.rpc("consume_ai_credit_server", {
+          p_user_id: userId,
+          p_cost: cost,
+        });
+        if (error) console.error("consume_ai_credit_server error", error);
+        console.log("credit consumed", { userId, promptTokens, completionTokens, cost });
+      },
+    });
+
+    return new Response(response.body!.pipeThrough(usageTap), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
