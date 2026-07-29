@@ -7,25 +7,27 @@ export interface CreditState {
 }
 
 export async function fetchCurrentCredits(userId: string): Promise<CreditState | null> {
+  // 크레딧 팩으로 여러 유효 period가 공존할 수 있어 전체 합산
   const { data, error } = await supabase
     .from("user_credits")
     .select("id, credits_granted, credits_used, period_end")
     .eq("user_id", userId)
-    .gt("period_end", new Date().toISOString())
-    .order("period_end", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .gt("period_end", new Date().toISOString());
 
   if (error) {
     console.error("fetchCurrentCredits error:", error);
     return { creditId: null, remaining: 0, granted: 0 };
   }
-  if (!data) return { creditId: null, remaining: 0, granted: 0 };
+  if (!data || data.length === 0) return { creditId: null, remaining: 0, granted: 0 };
 
-  const granted = Number(data.credits_granted ?? 0);
-  const used = Number(data.credits_used ?? 0);
+  let granted = 0;
+  let used = 0;
+  for (const row of data) {
+    granted += Number(row.credits_granted ?? 0);
+    used += Number(row.credits_used ?? 0);
+  }
   return {
-    creditId: data.id,
+    creditId: data[0].id,
     granted,
     remaining: Math.max(0, granted - used),
   };

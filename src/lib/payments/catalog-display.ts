@@ -1,5 +1,5 @@
 export interface DisplayProduct {
-  productType: 'single_test' | 'pro_subscription';
+  productType: 'single_test' | 'pro_subscription' | 'credit_pack';
   productId: string;
   name: string;
   description: string;
@@ -47,8 +47,12 @@ export const PRO_PLAN_DISPLAY: DisplayProduct = {
   productType: 'pro_subscription',
   productId: 'pro-monthly',
   name: 'Pro 멤버십',
-  description: '월 ₩9,900 / 200 크레딧 + 주 2회 무료 검사',
+  description: '월 ₩9,900 / 50 크레딧 + 주간 검사 혜택',
   amount: 9900,
   currency: 'KRW',
-  comingSoon: true,
 };
+
+export const CREDIT_PACK_DISPLAY: DisplayProduct[] = [
+  { productType: 'credit_pack', productId: 'credit-pack-10', name: 'AI 크레딧 10개', description: 'AI 코칭 대화 약 10회', amount: 2900, currency: 'KRW' },
+  { productType: 'credit_pack', productId: 'credit-pack-30', name: 'AI 크레딧 30개', description: 'AI 코칭 대화 약 30회', amount: 6900, currency: 'KRW' },
+];
