@@ -46,12 +46,20 @@ const TEST_IDS: Array<{ id: string; name: string }> = [
 ];
 
 // TODO: 추후 DB tests 테이블의 price 컬럼으로 이전
-export const PRODUCT_CATALOG: ProductCatalogEntry[] = TEST_IDS.map((t) => ({
-  productType: 'single_test' as const,
-  productId: t.id,
-  amount: 2900,
-  name: t.name,
-}));
+export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
+  ...TEST_IDS.map((t) => ({
+    productType: 'single_test' as const,
+    productId: t.id,
+    amount: 2900,
+    name: t.name,
+  })),
+  {
+    productType: 'pro_subscription' as const,
+    productId: 'pro-monthly',
+    amount: 9900,
+    name: 'Pro 멤버십 (월)',
+  },
+];
 
 export function findProduct(productType: ProductType, productId: string): ProductCatalogEntry | null {
   return PRODUCT_CATALOG.find((p) => p.productType === productType && p.productId === productId) ?? null;

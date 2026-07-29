@@ -155,6 +155,45 @@ serve(async (req) => {
       }
     }
 
+    // 3-7. pro 구독 활성화 + 첫 달 크레딧
+    if (updated.product_type === "pro_subscription") {
+      const periodStart = new Date();
+      const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      const { data: plan } = await admin
+        .from("subscription_plans")
+        .select("id, ai_credits_monthly")
+        .eq("code", "pro_monthly")
+        .single();
+
+      if (plan) {
+        await admin.from("user_subscriptions")
+          .update({ status: "cancelled" })
+          .eq("user_id", updated.user_id)
+          .eq("status", "active");
+
+        const { error: subErr } = await admin.from("user_subscriptions").insert({
+          user_id: updated.user_id,
+          plan_id: plan.id,
+          status: "active",
+          current_period_start: periodStart.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+        });
+        if (subErr) console.error("pro subscription insert failed", orderId, subErr);
+
+        const { error: credErr } = await admin.from("user_credits").insert({
+          user_id: updated.user_id,
+          period_start: periodStart.toISOString(),
+          period_end: periodEnd.toISOString(),
+          credits_granted: plan.ai_credits_monthly ?? 50,
+          source: "pro_monthly",
+        });
+        if (credErr) console.error("pro credits insert failed", orderId, credErr);
+      } else {
+        console.error("pro_monthly plan not found for", orderId);
+      }
+    }
+
     return json(200, {
       status: "completed",
       orderId,
