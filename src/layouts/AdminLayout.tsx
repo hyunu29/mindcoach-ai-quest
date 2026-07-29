@@ -3,6 +3,7 @@ import { LayoutDashboard, Settings, LogOut, ClipboardCheck, MessageCircle } from
 import { NavLink } from '@/components/NavLink';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import AdminBottomTabBar from '@/components/navigation/AdminBottomTabBar';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -69,9 +70,10 @@ export default function AdminLayout() {
           로그아웃
         </button>
       </aside>
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 pb-20 md:pb-0">
         <Outlet />
       </main>
+      <AdminBottomTabBar />
     </div>
   );
 }
