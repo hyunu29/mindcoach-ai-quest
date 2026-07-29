@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { track } from '@/lib/analytics';
 
 interface PurchaseArgs {
-  productType: 'single_test' | 'pro_subscription';
+  productType: 'single_test' | 'pro_subscription' | 'credit_pack';
   productId: string;
   productName: string;
 }

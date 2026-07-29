@@ -17,6 +17,7 @@ import type { ChatMessage, DbSession } from "@/lib/coaching-types";
 import { runAgentActions, type AgentDecision } from "@/services/agentEngine";
 import { getRecentEmotions, buildEmotionSummary } from "@/services/agentActions";
 import { fetchCurrentCredits, formatCredits, estimateConversations, type CreditState } from "@/lib/credits";
+import CreditUpsellModal from "@/components/coaching/CreditUpsellModal";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ export default function CoachingPage() {
   const [emotionSavedInSession, setEmotionSavedInSession] = useState<Record<string, boolean>>({});
 
   const [credits, setCredits] = useState<CreditState>({ creditId: null, remaining: 0, granted: 0 });
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
   const refreshCredits = useCallback(async (uid: string) => {
     const c = await fetchCurrentCredits(uid);
@@ -176,8 +177,7 @@ export default function CoachingPage() {
       onError: (err) => {
         setIsTyping(false);
         if (err === "INSUFFICIENT_CREDITS") {
-          setShowUpgradeModal(true);
-          toast({ title: "크레딧이 모두 소진됐어요", description: "다음 충전을 기다리거나 Pro를 구독해 보세요.", variant: "destructive" });
+          setUpsellOpen(true);
           return;
         }
         const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 마이치입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
@@ -191,7 +191,7 @@ export default function CoachingPage() {
     if (!input.trim() || isTyping || !active || !userId || !activeId) return;
 
     if (credits.remaining <= 0) {
-      setShowUpgradeModal(true);
+      setUpsellOpen(true);
       return;
     }
 
@@ -290,8 +290,7 @@ export default function CoachingPage() {
       onError: async (err) => {
         setIsTyping(false);
         if (err === "INSUFFICIENT_CREDITS") {
-          setShowUpgradeModal(true);
-          toast({ title: "크레딧이 모두 소진됐어요", description: "다음 충전을 기다리거나 Pro를 구독해 보세요.", variant: "destructive" });
+          setUpsellOpen(true);
           // abort gracefully: restore input, revert the optimistic user message
           setInput(text);
           setSessions((prev) => prev.map((s) => s.id === currentSessionId ? { ...s, messages } : s));
@@ -404,7 +403,7 @@ export default function CoachingPage() {
           </div>
           <button
             type="button"
-            onClick={() => setShowUpgradeModal(true)}
+            onClick={() => setUpsellOpen(true)}
             className={`ml-auto inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition-colors ${
               credits.remaining === 0
                 ? "bg-red-100 text-red-700 border-red-200"
@@ -577,34 +576,8 @@ export default function CoachingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Upgrade modal */}
-      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-        <DialogContent
-          className="rounded-2xl max-w-sm"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle className="text-lg">크레딧이 부족해요</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              AI 코칭 크레딧을 모두 사용했습니다. Pro 플랜으로 업그레이드하면 매월 200 크레딧을 받을 수 있어요.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2 mt-2">
-            <Button
-              className="rounded-xl gradient-primary text-primary-foreground"
-              onClick={() => {
-                setShowUpgradeModal(false);
-                toast({ title: "곧 출시 예정", description: "Pro 플랜은 준비 중입니다." });
-              }}
-            >
-              Pro 플랜 보기
-            </Button>
-            <Button variant="outline" className="rounded-xl" onClick={() => setShowUpgradeModal(false)}>
-              닫기
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Credit upsell modal */}
+      <CreditUpsellModal open={upsellOpen} onOpenChange={setUpsellOpen} />
     </div>
   );
 }
