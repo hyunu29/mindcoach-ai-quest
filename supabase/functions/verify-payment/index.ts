@@ -194,6 +194,21 @@ serve(async (req) => {
       }
     }
 
+    // 3-8. 크레딧 팩 지급
+    if (updated.product_type === "credit_pack") {
+      const packCredits = updated.product_id === "credit-pack-30" ? 30 : 10;
+      const periodStart = new Date();
+      const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      const { error: packErr } = await admin.from("user_credits").insert({
+        user_id: updated.user_id,
+        period_start: periodStart.toISOString(),
+        period_end: periodEnd.toISOString(),
+        credits_granted: packCredits,
+        source: "credit_pack",
+      });
+      if (packErr) console.error("credit pack insert failed", orderId, packErr);
+    }
+
     return json(200, {
       status: "completed",
       orderId,

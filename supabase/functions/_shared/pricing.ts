@@ -1,5 +1,5 @@
 // ⚠️ 서버 전용 가격 카탈로그 — 클라이언트에서 import 금지
-export type ProductType = 'single_test' | 'pro_subscription';
+export type ProductType = 'single_test' | 'pro_subscription' | 'credit_pack';
 
 export interface ProductCatalogEntry {
   productType: ProductType;
@@ -58,6 +58,18 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
     productId: 'pro-monthly',
     amount: 9900,
     name: 'Pro 멤버십 (월)',
+  },
+  {
+    productType: 'credit_pack' as const,
+    productId: 'credit-pack-10',
+    amount: 2900,
+    name: 'AI 크레딧 10개',
+  },
+  {
+    productType: 'credit_pack' as const,
+    productId: 'credit-pack-30',
+    amount: 6900,
+    name: 'AI 크레딧 30개',
   },
 ];
 
