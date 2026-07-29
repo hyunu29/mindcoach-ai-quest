@@ -1,11 +1,29 @@
 import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { Copy, ChevronRight, Loader2 } from 'lucide-react';
+import { Copy, ChevronRight, Loader2, Search, Info } from 'lucide-react';
 import { useMyAcademy } from '@/hooks/useMyAcademy';
-import { useAcademyStudents, type Signal } from '@/hooks/useAcademyStudents';
+import { useAcademyStudents, type Signal, type StudentSignalRow } from '@/hooks/useAcademyStudents';
 import { toast } from 'sonner';
+
+type SortKey = 'signal' | 'name' | 'activity';
+
+const SIGNAL_ORDER: Record<Signal, number> = {
+  red: 1,
+  yellow: 2,
+  unassessed: 3,
+  green: 4,
+};
 
 const SIGNAL_LABEL: Record<Signal, string> = {
   green: '그린',
@@ -26,6 +44,8 @@ export default function AdminDashboardPage() {
   const { academy, loading: academyLoading } = useMyAcademy();
   const { rows, loading: rowsLoading } = useAcademyStudents(academy?.id ?? null);
   const [filter, setFilter] = useState<Signal | 'all'>('all');
+  const [query, setQuery] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('signal');
 
   const counts = useMemo(
     () => ({
@@ -37,7 +57,26 @@ export default function AdminDashboardPage() {
     [rows],
   );
 
-  const filtered = filter === 'all' ? rows : rows.filter((r) => r.signal === filter);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const base = filter === 'all' ? rows : rows.filter((r) => r.signal === filter);
+    const searched = q
+      ? base.filter((r) => (r.nickname ?? '').toLowerCase().includes(q))
+      : base;
+    const sorted = [...searched];
+    sorted.sort((a: StudentSignalRow, b: StudentSignalRow) => {
+      if (sortKey === 'name') {
+        return (a.nickname ?? '').localeCompare(b.nickname ?? '', 'ko');
+      }
+      if (sortKey === 'activity') {
+        const ta = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0;
+        const tb = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0;
+        return tb - ta;
+      }
+      return SIGNAL_ORDER[a.signal] - SIGNAL_ORDER[b.signal];
+    });
+    return sorted;
+  }, [rows, filter, query, sortKey]);
 
   const copyCode = () => {
     if (!academy) return;
@@ -111,13 +150,60 @@ export default function AdminDashboardPage() {
         </button>
       )}
 
+      {/* 검색 + 정렬 */}
+      {(rows.length > 0 || !rowsLoading) && (
+        <div className="flex gap-2 items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="원생 이름 검색"
+              className="pl-9 rounded-xl"
+            />
+          </div>
+          <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+            <SelectTrigger className="w-32 sm:w-40 rounded-xl">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="signal">위험도순</SelectItem>
+              <SelectItem value="name">이름순</SelectItem>
+              <SelectItem value="activity">최근 활동순</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* 원생 목록 */}
       <section className="space-y-3">
         {rowsLoading ? (
-          <p className="text-center text-muted-foreground py-8">불러오는 중...</p>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-2xl" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <Card className="p-6 rounded-2xl bg-primary/5 border-primary/20 border-dashed">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="space-y-2 text-sm">
+                <h3 className="font-bold">아직 연결된 원생이 없어요</h3>
+                <p className="text-muted-foreground">
+                  원생에게 학원 코드 <span className="font-mono font-semibold text-foreground">{academy.code}</span>를 공유하면, 원생이 프로필에서 코드 입력 후 연결돼요.
+                </p>
+                <button
+                  onClick={copyCode}
+                  className="text-primary text-xs font-medium hover:underline flex items-center gap-1"
+                >
+                  <Copy className="w-3 h-3" /> 학원 코드 복사하기
+                </button>
+              </div>
+            </div>
+          </Card>
         ) : filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
-            {filter === 'all' ? '연결된 원생이 아직 없어요.' : '해당 신호의 원생이 없어요.'}
+          <p className="text-center text-muted-foreground py-8 text-sm">
+            {query ? '검색 결과가 없어요.' : '해당 신호의 원생이 없어요.'}
           </p>
         ) : (
           filtered.map((r) => (
