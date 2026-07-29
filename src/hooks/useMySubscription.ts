@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -7,6 +7,7 @@ export interface MySubscription {
   status: string;
   current_period_end: string;
   daysRemaining: number;
+  cancelAtPeriodEnd: boolean;
 }
 
 export function useMySubscription() {
@@ -29,7 +30,12 @@ export function useMySubscription() {
                 order: (c: string, o: { ascending: boolean }) => {
                   limit: (n: number) => {
                     maybeSingle: () => Promise<{
-                      data: { id: string; status: string; current_period_end: string } | null;
+                      data: {
+                        id: string;
+                        status: string;
+                        current_period_end: string;
+                        cancel_at_period_end: boolean | null;
+                      } | null;
                     }>;
                   };
                 };
@@ -38,7 +44,7 @@ export function useMySubscription() {
           };
         };
       })
-        .select('id, status, current_period_end')
+        .select('id, status, current_period_end, cancel_at_period_end')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .gt('current_period_end', new Date().toISOString())
@@ -49,11 +55,33 @@ export function useMySubscription() {
         const days = Math.ceil(
           (new Date(data.current_period_end).getTime() - Date.now()) / 86400000,
         );
-        setSubscription({ ...data, daysRemaining: days });
+        setSubscription({
+          id: data.id,
+          status: data.status,
+          current_period_end: data.current_period_end,
+          daysRemaining: days,
+          cancelAtPeriodEnd: data.cancel_at_period_end ?? false,
+        });
       }
       setLoading(false);
     })();
   }, [user]);
 
-  return { subscription, loading };
+  const setCancelAtPeriodEnd = useCallback(
+    async (cancel: boolean): Promise<boolean> => {
+      if (!subscription) return false;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('user_subscriptions') as any)
+        .update({ cancel_at_period_end: cancel })
+        .eq('id', subscription.id);
+      if (!error) {
+        setSubscription({ ...subscription, cancelAtPeriodEnd: cancel });
+        return true;
+      }
+      return false;
+    },
+    [subscription],
+  );
+
+  return { subscription, loading, setCancelAtPeriodEnd };
 }

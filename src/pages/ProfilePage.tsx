@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, LogOut, ChevronRight, Loader2, Save } from "lucide-react";
+import { User, LogOut, ChevronRight, Loader2, Save, Crown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import AcademyCodeInput, { type AcademyLookup } from "@/components/academy/Acade
 import PrivacyDisclosureModal from "@/components/academy/PrivacyDisclosureModal";
 import { useConnectAcademy } from "@/hooks/useConnectAcademy";
 import { useAcademyVouchers } from "@/hooks/useAcademyVouchers";
+import { useMySubscription } from "@/hooks/useMySubscription";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
@@ -50,6 +51,7 @@ export default function ProfilePage() {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const { connect, connecting } = useConnectAcademy();
   const { count: voucherCount, refresh: refreshVouchers } = useAcademyVouchers();
+  const { subscription, setCancelAtPeriodEnd } = useMySubscription();
 
   const handleCharacterSelect = async (breed: Breed) => {
     const source: 'recommended' | 'free' | 'changed' =
@@ -330,6 +332,58 @@ export default function ProfilePage() {
               }}
             />
           </>
+        )}
+      </Card>
+
+      {/* Subscription management */}
+      <Card className="p-5 rounded-2xl border-border/50 shadow-sm space-y-3">
+        <h2 className="font-bold">구독 관리</h2>
+        {subscription ? (
+          <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
+            <div>
+              <div className="text-sm font-medium flex items-center gap-1.5">
+                <Crown className="w-4 h-4 text-primary" /> Pro 멤버십
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                {subscription.cancelAtPeriodEnd
+                  ? `해지 예정 · ${new Date(subscription.current_period_end).toLocaleDateString('ko-KR')}까지 이용 가능`
+                  : `D-${subscription.daysRemaining} · 다음 갱신 ${new Date(subscription.current_period_end).toLocaleDateString('ko-KR')}`}
+              </div>
+            </div>
+            {subscription.cancelAtPeriodEnd ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const ok = await setCancelAtPeriodEnd(false);
+                  if (ok) toast.success('해지를 취소했어요');
+                  else toast.error('처리에 실패했어요');
+                }}
+              >
+                해지 취소
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+                onClick={async () => {
+                  const ok = await setCancelAtPeriodEnd(true);
+                  if (ok) toast.success('기간 종료 시 해지돼요');
+                  else toast.error('처리에 실패했어요');
+                }}
+              >
+                해지하기
+              </Button>
+            )}
+          </div>
+        ) : (
+          <button
+            className="text-sm text-primary font-medium hover:underline"
+            onClick={() => navigate('/tests')}
+          >
+            Pro 멤버십 구독하기 →
+          </button>
         )}
       </Card>
 
