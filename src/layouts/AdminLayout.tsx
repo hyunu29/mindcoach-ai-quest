@@ -4,9 +4,13 @@ import { NavLink } from '@/components/NavLink';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import AdminBottomTabBar from '@/components/navigation/AdminBottomTabBar';
+import { useMyAcademy } from '@/hooks/useMyAcademy';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+  const { academy } = useMyAcademy();
+  const { user } = useAuth();
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate('/auth');
@@ -14,7 +18,15 @@ export default function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="hidden md:flex flex-col w-56 border-r border-border/50 bg-card p-4">
-        <div className="font-bold text-lg mb-8 px-2">마이치 관리자</div>
+        <div className="mb-8 px-2">
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">마이치 관리자</div>
+          <div className="font-bold text-base mt-0.5 truncate">
+            {academy?.name ?? '학원 정보 없음'}
+          </div>
+          {user?.email && (
+            <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{user.email}</div>
+          )}
+        </div>
         <nav className="flex flex-col gap-1">
           <NavLink
             to="/admin"
