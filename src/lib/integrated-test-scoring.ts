@@ -206,7 +206,7 @@ export function buildComplexRiskNote(
  * 김종환 코치 원본 사양: "적어도 일주일의 간격 후 심리검사를 진행".
  */
 export const FOLLOW_UP_INTERVAL_NOTICE =
-  "한 번의 통합검사 이후 두 개 이상의 후속 심리검사를 받을 경우, 적어도 일주일의 간격을 두고 진행하시는 것을 권장합니다.";
+  "한 번의 통합검사 이후 두 개 이상의 간이 심리검사를 받을 경우, 적어도 일주일의 간격을 두고 진행하시는 것을 권장합니다.";
 
 export {
   DOMAIN_MAX_SCORE,

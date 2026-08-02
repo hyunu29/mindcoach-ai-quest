@@ -80,7 +80,7 @@ function IntegratedBanner({ test, onClick }: { test: TestRow; onClick: () => voi
           </Badge>
           <h3 className="font-bold text-base md:text-lg">{test.name}</h3>
           <p className="text-xs md:text-sm opacity-90 leading-relaxed mt-1">
-            10가지 심리 영역을 한 번에 점검하고, 나에게 필요한 후속 검사를 추천받으세요.
+            10가지 심리 영역을 한 번에 점검하고, 나에게 필요한 간이 검사를 추천받으세요.
           </p>
           <div className="flex items-center gap-3 text-[11px] md:text-xs opacity-90 mt-2">
             <span className="flex items-center gap-1"><ClipboardCheck className="w-3 h-3" />{test.question_count}문항</span>

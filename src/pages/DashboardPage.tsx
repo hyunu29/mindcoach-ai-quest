@@ -273,7 +273,7 @@ export default function DashboardPage() {
         >
           <ClipboardCheck className="w-8 h-8 text-primary mb-2" />
           <div className="font-semibold text-sm">심리검사 하기</div>
-          <div className="text-xs text-muted-foreground mt-0.5">26종 전문 검사</div>
+          <div className="text-xs text-muted-foreground mt-0.5">26종 간이 심리검사</div>
         </Card>
         <Card
           className="p-4 rounded-2xl border-border/50 shadow-sm cursor-pointer hover:shadow-md transition-shadow active:scale-[0.97]"

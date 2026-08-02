@@ -340,7 +340,7 @@ export default function ResultsPage() {
       ? "모든 영역이 안정 범위입니다. 평소 루틴을 잘 유지하고 있어요."
       : highCount >= 5
         ? `${highCount}개 영역이 고위험으로 나타났어요. 종합 코칭이 필요합니다.`
-        : `${highCount}개 영역이 주의 수준으로 나타났어요. 후속 검사를 살펴보세요.`
+        : `${highCount}개 영역이 주의 수준으로 나타났어요. 간이 검사를 살펴보세요.`
     : fallbackRisk.description;
 
   const radarData = result.subdomains.map((area) => ({
@@ -464,7 +464,7 @@ export default function ResultsPage() {
               <Compass className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1">
-              <div className="text-xs font-semibold text-primary mb-1">코치 김종환의 안내</div>
+              <div className="text-xs font-semibold text-primary mb-1">치토의 조언</div>
               <p className="text-sm leading-relaxed text-foreground">
                 {buildGatewayMessage(helperResult, testNameById)}
               </p>
@@ -535,9 +535,9 @@ export default function ResultsPage() {
       {/* Recommended follow-up tests (Integrated only) */}
       {isIntegrated && recommendations.length > 0 && (
         <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
-          <h2 className="font-bold mb-1">추천 후속 검사</h2>
+          <h2 className="font-bold mb-1">추천 필수 간이 검사</h2>
           <p className="text-xs text-muted-foreground mb-4">
-            고득점 영역에 맞는 전문 심리검사를 추천드려요.
+            고득점 영역에 맞는 간이 심리검사를 추천드려요.
           </p>
           <div className="space-y-4">
             {recommendations.map((rec) => (
