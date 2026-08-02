@@ -26,7 +26,7 @@ interface ProfileRow {
 }
 
 interface IntResult {
-  scores: { subdomain_scores?: Record<string, number> } | null;
+  subdomain_scores: Record<string, number> | null;
   created_at: string;
 }
 
@@ -41,7 +41,8 @@ interface EmotionPoint {
   score: number;
 }
 
-const DOMAIN_THRESHOLD = 12;
+// INT 채점: 25점 만점 중 15점 이상 = 위험 (DOMAIN_RECOMMEND_THRESHOLD와 동일)
+const DOMAIN_THRESHOLD = 15;
 
 const SIGNAL_LABEL: Record<SignalRow['signal'], string> = {
   green: '그린',
@@ -112,7 +113,7 @@ export default function AdminStudentDetailPage() {
           };
         };
       })
-        .select('scores, created_at')
+        .select('subdomain_scores, created_at')
         .eq('user_id', userId)
         .eq('test_id', 'INT')
         .gte('created_at', since)
@@ -218,7 +219,7 @@ export default function AdminStudentDetailPage() {
       )}
 
       {/* 통합검사 결과 */}
-      {intResult?.scores?.subdomain_scores && (
+      {intResult?.subdomain_scores && (
         <Card className="p-5 rounded-2xl">
           <div className="flex items-baseline justify-between mb-3">
             <h2 className="font-bold">통합검사 결과</h2>
@@ -227,8 +228,8 @@ export default function AdminStudentDetailPage() {
             </span>
           </div>
           <div className="space-y-1.5">
-            {Object.entries(intResult.scores.subdomain_scores).map(([domain, score]) => {
-              const isRisk = (score as number) < DOMAIN_THRESHOLD;
+            {Object.entries(intResult.subdomain_scores).map(([domain, score]) => {
+              const isRisk = (score as number) >= DOMAIN_THRESHOLD;
               return (
                 <div key={domain} className="flex items-center gap-2 text-sm">
                   <span
