@@ -121,16 +121,16 @@ export default function CoachingPage() {
       const syndrome = searchParams.get("syndrome");
       const resultId = searchParams.get("resultId");
       if (syndrome) {
-        const firstMsg: ChatMessage = { role: "ai", content: "", timestamp: new Date().toISOString() };
-
+        // 빈 placeholder를 DB에 저장하지 않는다 — 스트리밍 실패 시 빈 ai 메시지가
+        // 영구 저장되어 이후 모든 요청의 히스토리를 오염시키던 문제 방지
         const { data: newSession, error: insertError } = await supabase
           .from("coaching_sessions")
-          .insert({ user_id: user.id, related_syndrome: syndrome, related_test_result_id: resultId || null, messages: [firstMsg] as any } as any)
+          .insert({ user_id: user.id, related_syndrome: syndrome, related_test_result_id: resultId || null, messages: [] as any } as any)
           .select()
           .single();
 
         if (!insertError && newSession) {
-          const ns: DbSession = { id: newSession.id, related_syndrome: newSession.related_syndrome, messages: [firstMsg], created_at: newSession.created_at, updated_at: newSession.updated_at };
+          const ns: DbSession = { id: newSession.id, related_syndrome: newSession.related_syndrome, messages: [], created_at: newSession.created_at, updated_at: newSession.updated_at };
           setSessions((prev) => [ns, ...prev]);
           setActiveId(newSession.id);
           generateFirstMessage(newSession.id, syndrome, []);
@@ -175,14 +175,16 @@ export default function CoachingPage() {
         });
         await refreshCredits(userId);
       },
-      onError: (err) => {
+      onError: async (err) => {
         setIsTyping(false);
         if (err === "INSUFFICIENT_CREDITS") {
           setUpsellOpen(true);
           return;
         }
-        const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 마이치입니다. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
+        const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 치토예요. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
         setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s));
+        // 로컬에만 두면 새로고침 후 빈 세션이 남으므로 DB에도 반영
+        await supabase.from("coaching_sessions").update({ messages: [fallbackMsg] as any, updated_at: new Date().toISOString() }).eq("id", sessionId);
         toast({ title: "AI 연결 오류", description: err, variant: "destructive" });
       },
     });

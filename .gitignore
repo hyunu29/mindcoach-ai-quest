@@ -24,6 +24,9 @@ public/character-assets-local/**/*.png
 .env.*
 !.env.example
 
+# 개인용 내부 문서 (트랙 배정 계획 · term sheet 초안 등) — 팀 공유 금지
+docs/sessions/_private/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -34,3 +37,13 @@ public/character-assets-local/**/*.png
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*
+.gstack/
+
+# 내부 문서/로컬 설정 (공개 저장소 커밋 금지)
+.mcp.json
+.claude/
+docs/sessions/
+docs/plans/
+docs/runbooks/

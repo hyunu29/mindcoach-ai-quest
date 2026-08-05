@@ -7,11 +7,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `당신은 "마이치"입니다. 수험생(중·고등학생)을 위한 심리 코칭 전문 AI입니다.
+const SYSTEM_PROMPT = `당신은 "치토"입니다. 마이치(My Cognitive Habit) 서비스의 공식 캐릭터이자, 수험생(중·고등학생)을 위한 심리 코칭 전문 AI입니다. 작은 새싹이 돋아난 감자 캐릭터로, 따뜻하고 친근한 존재입니다. 자신을 소개할 때는 "치토"라고 하세요.
 
 ## 역할
 - 수험생의 학업 스트레스, 불안, 번아웃 등 심리적 어려움에 공감하고 맞춤 코칭을 제공합니다.
-- 전문 심리 상담사 "마인드코치 김종환"의 20년 임상 경험을 기반으로 합니다.
+- 전문 심리 상담사의 임상 경험 기반 코칭 원칙을 따릅니다.
 
 ## 코칭 원칙
 1. 공감 우선: 학생의 감정을 먼저 인정하고 공감합니다.
@@ -105,30 +105,44 @@ serve(async (req) => {
       contextMessage += `\n## 최근 7일 감정 기록\n${emotion_summary}\n`;
     }
 
-    const aiMessages = (messages || []).map((m: { role: string; content: string }) => ({
-      role: m.role === "ai" ? "assistant" : "user",
-      content: m.content,
-    }));
+    // 빈 content 메시지는 업스트림에서 거부될 수 있으므로 제외 (스트리밍 실패 잔여물 방어)
+    const aiMessages = (messages || [])
+      .filter((m: { role: string; content: string }) =>
+        typeof m.content === "string" && m.content.trim() !== "")
+      .map((m: { role: string; content: string }) => ({
+        role: m.role === "ai" ? "assistant" : "user",
+        content: m.content,
+      }));
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${GEMINI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: GEMINI_MODEL,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT + contextMessage },
-            ...aiMessages,
-          ],
-          stream: true,
-          stream_options: { include_usage: true },
-        }),
-      }
-    );
+    const upstreamBody = JSON.stringify({
+      model: GEMINI_MODEL,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT + contextMessage },
+        ...aiMessages,
+      ],
+      stream: true,
+      stream_options: { include_usage: true },
+    });
+
+    // 일시적 5xx(모델 과부하 등)는 짧은 백오프로 재시도
+    let response!: Response;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${GEMINI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: upstreamBody,
+        }
+      );
+      if (response.ok || ![500, 502, 503, 504].includes(response.status)) break;
+      console.error(`Gemini 5xx (attempt ${attempt + 1})`, response.status);
+      await response.body?.cancel();
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -144,11 +158,14 @@ serve(async (req) => {
         });
       }
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "AI 응답 생성에 실패했습니다." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("Gemini API error:", response.status, errorText.slice(0, 500));
+      return new Response(
+        JSON.stringify({ error: `AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요. (업스트림 ${response.status})` }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     let sseBuffer = "";

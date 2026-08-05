@@ -233,7 +233,7 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
         .from('emotion_streaks')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (streak) {
         const lastDate = streak.last_record_date;

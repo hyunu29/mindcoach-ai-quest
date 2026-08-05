@@ -68,7 +68,7 @@ export default function EmotionRecordCard({ data, userId, sessionId, onSaved }: 
         .from('emotion_streaks')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (streakData) {
         const lastDate = streakData.last_record_date;

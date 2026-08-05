@@ -44,7 +44,10 @@ export async function streamCoachingChat({
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      // 빈 content(스트리밍 실패 잔여 플레이스홀더)는 업스트림 거부 방지 위해 제외
+      messages: messages
+        .filter((m) => typeof m.content === "string" && m.content.trim() !== "")
+        .map((m) => ({ role: m.role, content: m.content })),
       syndrome_context: syndromeContext || null,
       test_result_summary: testResultSummary || null,
       emotion_summary: emotionSummary || null,
