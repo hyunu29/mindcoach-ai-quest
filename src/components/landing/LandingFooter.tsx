@@ -10,9 +10,9 @@ export default function LandingFooter() {
             마이치
           </div>
           <div className="flex gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">이용약관</a>
-            <a href="#" className="hover:text-foreground transition-colors">개인정보처리방침</a>
-            <a href="#" className="hover:text-foreground transition-colors">문의하기</a>
+            <a href="/terms" className="hover:text-foreground transition-colors">이용약관</a>
+            <a href="/privacy" className="hover:text-foreground transition-colors">개인정보처리방침</a>
+            <a href="mailto:eduflo365@gmail.com" className="hover:text-foreground transition-colors">문의하기</a>
           </div>
         </div>
 

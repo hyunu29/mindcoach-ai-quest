@@ -27,6 +27,8 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminStudentDetailPage from "./pages/admin/AdminStudentDetailPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import StaffTestIntroPage from "./pages/admin/StaffTestIntroPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsPage from "./pages/TermsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +45,8 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
             <Route path="/payment/mock" element={<MockCheckoutPage />} />
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
             <Route path="/payment/fail" element={<PaymentFailPage />} />
