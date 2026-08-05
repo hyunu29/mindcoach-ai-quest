@@ -2,7 +2,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, MessageCircle, ClipboardList, LogIn, Loader2, Compass, AlertTriangle, Info, ChevronRight } from "lucide-react";
+import { CheckCircle, MessageCircle, ClipboardList, LogIn, Loader2, AlertTriangle, Info, ChevronRight } from "lucide-react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
 import { getRiskLevel } from "@/data/seed-data";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,10 +23,7 @@ import {
   type DomainScores,
   type DomainKey,
 } from "@/lib/character/recommend";
-import { CharacterRecommendationCard } from "@/components/character/CharacterRecommendationCard";
-import { CharacterSelectModal } from "@/components/character/CharacterSelectModal";
-import { useCharacter } from "@/hooks/useCharacter";
-import type { Breed } from "@/lib/character/types";
+import { CHITO_MAIN_URL } from "@/lib/character/chito";
 
 function getBarColor(score: number, max: number) {
   const pct = (score / max) * 100;
@@ -86,47 +83,9 @@ export default function ResultsPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isTempResult, setIsTempResult] = useState(false);
   const [testNameById, setTestNameById] = useState<Record<string, string>>({});
-  const [characterModalOpen, setCharacterModalOpen] = useState(false);
-  const [recommendationFired, setRecommendationFired] = useState(false);
-
-  const { selectedBreed, recommendedBreed, selectCharacter } = useCharacter();
-
   useEffect(() => {
     loadResult();
   }, [id]);
-
-  useEffect(() => {
-    if (recommendationFired || !result || !result.isIntegrated) return;
-    const domains: DomainScores = {
-      emotional_instability: 0,
-      test_stage_anxiety: 0,
-      learning_obsession: 0,
-      routine_time_control: 0,
-      cognitive_focus: 0,
-      learning_avoidance: 0,
-      somatic_pain: 0,
-      energy_burnout: 0,
-      self_relationships: 0,
-      sleep_routine: 0,
-    };
-    for (const d of INTEGRATED_DOMAINS) {
-      const score = (result.subdomainScores[d.name] as number) ?? 0;
-      if (d.key in domains) domains[d.key as DomainKey] = score;
-    }
-    const rec = recommendCharacter(domains);
-    if (rec.status !== 'insufficient_data') {
-      const top2Gap =
-        rec.status === 'tie'
-          ? rec.top.score - rec.runnerUp.score
-          : rec.top.score - rec.rest[0].score;
-      void track('character_recommended', {
-        recommended_breed: rec.top.breed,
-        affinity_score: rec.top.score,
-        top2_gap: top2Gap,
-      });
-      setRecommendationFired(true);
-    }
-  }, [result, recommendationFired]);
 
   const loadResult = async () => {
     setLoading(true);
@@ -324,17 +283,6 @@ export default function ResultsPage() {
     characterRecommendation,
   };
 
-  const handleCharacterSelect = async (breed: Breed) => {
-    const source: 'recommended' | 'free' | 'changed' =
-      breed === recommendedBreed
-        ? 'recommended'
-        : selectedBreed === null
-        ? 'free'
-        : 'changed';
-    await selectCharacter(breed, source);
-    setCharacterModalOpen(false);
-  };
-
   const integratedDescription = isIntegrated
     ? highCount === 0
       ? "모든 영역이 안정 범위입니다. 평소 루틴을 잘 유지하고 있어요."
@@ -395,32 +343,6 @@ export default function ResultsPage() {
         <p className="text-xs text-muted-foreground">{dateStr} 실시</p>
       </div>
 
-      {/* Character Recommendation (통합검사만, 충분 데이터일 때) */}
-      {isIntegrated && characterRecommendation.status !== 'insufficient_data' && (
-        <CharacterRecommendationCard
-          topBreed={characterRecommendation.top.breed}
-          runnerUpBreed={
-            characterRecommendation.status === 'tie'
-              ? characterRecommendation.runnerUp.breed
-              : undefined
-          }
-          onSelect={handleCharacterSelect}
-          onOpenAll={() => setCharacterModalOpen(true)}
-        />
-      )}
-
-      <CharacterSelectModal
-        open={characterModalOpen}
-        onOpenChange={setCharacterModalOpen}
-        currentBreed={selectedBreed}
-        recommendedBreed={
-          characterRecommendation.status !== 'insufficient_data'
-            ? characterRecommendation.top.breed
-            : recommendedBreed
-        }
-        onSelect={handleCharacterSelect}
-      />
-
       {/* STAFF-1 interpretation card (4-band) */}
       {result.testId === 'STAFF-1' && (() => {
         const interp = getStaffInterpretation(result.totalScore);
@@ -460,8 +382,8 @@ export default function ResultsPage() {
       {isIntegrated && topDomainScore && topDomainScore.isHigh && (
         <Card className="p-5 rounded-2xl border-0 shadow-sm bg-gradient-to-br from-primary/10 via-primary/5 to-purple-500/10">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <Compass className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-white/70 flex items-center justify-center shrink-0 overflow-hidden">
+              <img src={CHITO_MAIN_URL} alt="치토" className="w-9 h-9 object-contain" loading="lazy" />
             </div>
             <div className="flex-1">
               <div className="text-xs font-semibold text-primary mb-1">치토의 조언</div>

@@ -9,10 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { useCharacter } from "@/hooks/useCharacter";
-import { CharacterSelectModal } from "@/components/character/CharacterSelectModal";
-import { BREED_PERSONAS, type Breed } from "@/lib/character/types";
-import { getCharacterCardUrl } from "@/lib/character/asset-url";
+import { CHITO, CHITO_MAIN_URL } from "@/lib/character/chito";
 import AcademyCodeInput, { type AcademyLookup } from "@/components/academy/AcademyCodeInput";
 import PrivacyDisclosureModal from "@/components/academy/PrivacyDisclosureModal";
 import { useConnectAcademy } from "@/hooks/useConnectAcademy";
@@ -34,15 +31,6 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // Character mascot
-  const {
-    selectedBreed,
-    recommendedBreed,
-    loading: characterLoading,
-    selectCharacter,
-  } = useCharacter();
-  const [characterModalOpen, setCharacterModalOpen] = useState(false);
-
   // Academy connection
   const [academyId, setAcademyId] = useState<string | null>(null);
   const [academyName, setAcademyName] = useState<string | null>(null);
@@ -52,17 +40,6 @@ export default function ProfilePage() {
   const { connect, connecting } = useConnectAcademy();
   const { count: voucherCount, refresh: refreshVouchers } = useAcademyVouchers();
   const { subscription, setCancelAtPeriodEnd } = useMySubscription();
-
-  const handleCharacterSelect = async (breed: Breed) => {
-    const source: 'recommended' | 'free' | 'changed' =
-      breed === recommendedBreed
-        ? 'recommended'
-        : selectedBreed === null
-        ? 'free'
-        : 'changed';
-    await selectCharacter(breed, source);
-    setCharacterModalOpen(false);
-  };
 
   useEffect(() => {
     if (!user) return;
@@ -176,55 +153,21 @@ export default function ProfilePage() {
       </Card>
 
       {/* Mascot Character */}
-      {!characterLoading && (
-        <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold">내 마스코트</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCharacterModalOpen(true)}
-            >
-              {selectedBreed ? '변경' : '선택'}
-            </Button>
+      <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
+        <h2 className="font-bold mb-3">내 마스코트</h2>
+        <div className="flex items-center gap-4">
+          <img
+            src={CHITO_MAIN_URL}
+            alt={CHITO.name}
+            className="w-20 h-20 object-contain"
+            loading="lazy"
+          />
+          <div className="flex-1">
+            <div className="font-bold">{CHITO.name}</div>
+            <div className="text-xs mt-1 text-muted-foreground">{CHITO.copy}</div>
           </div>
-          <div className="flex items-center gap-4">
-            {selectedBreed ? (
-              <>
-                <img
-                  src={getCharacterCardUrl(selectedBreed)}
-                  alt={BREED_PERSONAS[selectedBreed].koreanName}
-                  className="w-20 h-20 object-contain"
-                  loading="lazy"
-                />
-                <div className="flex-1">
-                  <div className="font-bold">
-                    {BREED_PERSONAS[selectedBreed].koreanName}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {BREED_PERSONAS[selectedBreed].personaName}
-                  </div>
-                  <div className="text-xs mt-1">
-                    {BREED_PERSONAS[selectedBreed].copy}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 text-sm text-muted-foreground">
-                아직 마스코트를 선택하지 않았어요. 통합검사를 받으면 가장 잘 맞는 마스코트를 추천드려요.
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
-
-      <CharacterSelectModal
-        open={characterModalOpen}
-        onOpenChange={setCharacterModalOpen}
-        currentBreed={selectedBreed}
-        recommendedBreed={recommendedBreed}
-        onSelect={handleCharacterSelect}
-      />
+        </div>
+      </Card>
 
       {/* Profile Edit */}
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm space-y-4">

@@ -6,11 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useCharacter } from "@/hooks/useCharacter";
 import { CharacterAvatar } from "@/components/character/CharacterAvatar";
-import { CharacterSelectModal } from "@/components/character/CharacterSelectModal";
+import { CHITO } from "@/lib/character/chito";
 import { calculateEmotionTrend, TREND_COPY } from "@/lib/character/trend";
-import { BREED_PERSONAS, type Breed } from "@/lib/character/types";
 import type { PrimaryEmotion } from "@/lib/emotion-agent-types";
 import { track } from "@/lib/analytics";
 
@@ -39,16 +37,8 @@ export default function DashboardPage() {
   const [recentResults, setRecentResults] = useState<any[]>([]);
   const [weekData, setWeekData] = useState<{ day: string; score: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [characterModalOpen, setCharacterModalOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const {
-    selectedBreed,
-    recommendedBreed,
-    changeCount,
-    loading: characterLoading,
-    selectCharacter,
-  } = useCharacter();
 
   useEffect(() => {
     if (!user) return;
@@ -133,33 +123,21 @@ export default function DashboardPage() {
 
   // character_viewed_home daily dedup
   useEffect(() => {
-    if (loading || characterLoading || !selectedBreed) return;
+    if (loading) return;
     try {
       const today = new Date().toISOString().split('T')[0];
       const last = localStorage.getItem(VIEWED_HOME_KEY);
       if (last === today) return;
       localStorage.setItem(VIEWED_HOME_KEY, today);
       void track('character_viewed_home', {
-        breed: selectedBreed,
+        breed: 'chito',
         emotion: characterEmotion,
         trend: characterTrend,
-        change_count: changeCount,
       });
     } catch {
       // localStorage unavailable - skip dedup
     }
-  }, [loading, characterLoading, selectedBreed, characterEmotion, characterTrend, changeCount]);
-
-  const handleCharacterSelect = async (breed: Breed) => {
-    const source: 'recommended' | 'free' | 'changed' =
-      breed === recommendedBreed
-        ? 'recommended'
-        : selectedBreed === null
-        ? 'free'
-        : 'changed';
-    await selectCharacter(breed, source);
-    setCharacterModalOpen(false);
-  };
+  }, [loading, characterEmotion, characterTrend]);
 
   const riskColor = (level: string) => {
     switch (level) {
@@ -188,41 +166,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Character Hero */}
-      {!characterLoading && selectedBreed && (
-        <Card className="p-6 rounded-2xl border-border/50 shadow-sm text-center">
-          <CharacterAvatar
-            breed={selectedBreed}
-            emotion={characterEmotion}
-            trend={characterTrend}
-            size="hero"
-            className="mx-auto"
-          />
-          <div className="mt-3">
-            <div className="font-bold">{BREED_PERSONAS[selectedBreed].koreanName}</div>
-            <div className="text-sm text-muted-foreground mt-0.5">
-              {TREND_COPY[characterTrend]}
-            </div>
+      <Card className="p-6 rounded-2xl border-border/50 shadow-sm text-center">
+        <CharacterAvatar emotion={characterEmotion} size="hero" className="mx-auto" />
+        <div className="mt-3">
+          <div className="font-bold">{CHITO.name}</div>
+          <div className="text-sm text-muted-foreground mt-0.5">
+            {TREND_COPY[characterTrend]}
           </div>
-        </Card>
-      )}
-      {!characterLoading && !selectedBreed && (
-        <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold text-sm">나만의 마스코트를 선택해보세요</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                통합검사를 받으면 가장 잘 맞는 마스코트를 추천드려요
-              </div>
-            </div>
-            <Button size="sm" onClick={() => setCharacterModalOpen(true)}>
-              선택
-            </Button>
-          </div>
-        </Card>
-      )}
+        </div>
+      </Card>
 
       {/* Emotion Picker */}
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
@@ -362,14 +314,6 @@ export default function DashboardPage() {
           ))}
         </div>
       </Card>
-
-      <CharacterSelectModal
-        open={characterModalOpen}
-        onOpenChange={setCharacterModalOpen}
-        currentBreed={selectedBreed}
-        recommendedBreed={recommendedBreed}
-        onSelect={handleCharacterSelect}
-      />
     </div>
   );
 }

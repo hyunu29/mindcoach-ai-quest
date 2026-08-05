@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { detectCrisisSignal } from "@/data/seed-data";
+import { CHITO_MAIN_URL } from "@/lib/character/chito";
 import {
   emotionOptions,
   secondaryEmotionMap,
@@ -154,29 +155,6 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
     scrollToBottom();
   }, [selectedEmotion, addMessage, addAgentDelayed, scrollToBottom]);
 
-  // Handle body reaction chips
-  const handleBodySelect = useCallback((keys: string[]) => {
-    const labels = keys.filter(k => k !== 'none').map(k => {
-      const found = bodyReactionOptions.find(b => b.key === k);
-      return found?.label || k;
-    });
-    setBodyReactions(labels);
-    if (keys.includes('none')) {
-      addMessage({ role: 'user', content: '없었어요' });
-    } else {
-      addMessage({ role: 'user', content: labels.join(', ') });
-    }
-    generateSummary(labels);
-    scrollToBottom();
-  }, [addMessage, scrollToBottom]);
-
-  // Skip body reaction
-  const handleSkipBody = useCallback(() => {
-    addMessage({ role: 'user', content: '넘어갈게!' });
-    generateSummary([]);
-    scrollToBottom();
-  }, [addMessage, scrollToBottom]);
-
   // Generate summary card
   const generateSummary = useCallback((bodyRxns: string[]) => {
     const now = new Date();
@@ -207,6 +185,29 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
       scrollToBottom();
     }, 600);
   }, [selectedEmotion, selectedSecondary, situation, addMessage, scrollToBottom]);
+
+  // Handle body reaction chips
+  const handleBodySelect = useCallback((keys: string[]) => {
+    const labels = keys.filter(k => k !== 'none').map(k => {
+      const found = bodyReactionOptions.find(b => b.key === k);
+      return found?.label || k;
+    });
+    setBodyReactions(labels);
+    if (keys.includes('none')) {
+      addMessage({ role: 'user', content: '없었어요' });
+    } else {
+      addMessage({ role: 'user', content: labels.join(', ') });
+    }
+    generateSummary(labels);
+    scrollToBottom();
+  }, [addMessage, scrollToBottom, generateSummary]);
+
+  // Skip body reaction
+  const handleSkipBody = useCallback(() => {
+    addMessage({ role: 'user', content: '넘어갈게!' });
+    generateSummary([]);
+    scrollToBottom();
+  }, [addMessage, scrollToBottom, generateSummary]);
 
   // Save to DB
   const handleSave = useCallback(async () => {
@@ -513,10 +514,10 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
       {/* Idle state */}
       {step === 'idle' && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center">
-            <span className="text-3xl">💜</span>
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center overflow-hidden">
+            <img src={CHITO_MAIN_URL} alt="치토" className="w-20 h-20 object-contain" />
           </div>
-          <p className="text-sm text-muted-foreground text-center">마이치가 오늘의 감정을 기록할 수 있도록 도와줄게요</p>
+          <p className="text-sm text-muted-foreground text-center">치토가 오늘의 감정을 기록할 수 있도록 도와줄게요</p>
 
           <Button variant="hero" size="lg" className="rounded-xl w-full max-w-xs" onClick={startConversation}>
             {todayRecord ? "한 번 더 기록하기" : "감정 기록 시작하기"}
@@ -537,8 +538,8 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] ${msg.role === 'user' ? '' : 'flex gap-2'}`}>
                   {msg.role === 'agent' && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center shrink-0 mt-1">
-                      <span className="text-sm">💜</span>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center shrink-0 mt-1 overflow-hidden">
+                      <img src={CHITO_MAIN_URL} alt="치토" className="w-7 h-7 object-contain" />
                     </div>
                   )}
                   <div>

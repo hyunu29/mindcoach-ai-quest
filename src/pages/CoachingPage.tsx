@@ -18,6 +18,7 @@ import { runAgentActions, type AgentDecision } from "@/services/agentEngine";
 import { getRecentEmotions, buildEmotionSummary } from "@/services/agentActions";
 import { fetchCurrentCredits, formatCredits, estimateConversations, type CreditState } from "@/lib/credits";
 import CreditUpsellModal from "@/components/coaching/CreditUpsellModal";
+import { CHITO_MAIN_URL } from "@/lib/character/chito";
 
 export default function CoachingPage() {
   const navigate = useNavigate();
@@ -394,11 +395,11 @@ export default function CoachingPage() {
           <Button variant="ghost" size="icon" className="rounded-lg h-8 w-8 md:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-4 h-4" />
           </Button>
-          <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center shrink-0 shadow-sm">
-            <Brain className="w-5 h-5 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+            <img src={CHITO_MAIN_URL} alt="치토" className="w-8 h-8 object-contain" />
           </div>
           <div className="min-w-0">
-            <div className="font-bold text-sm">마이치</div>
+            <div className="font-bold text-sm">치토</div>
             <div className="text-[10px] text-muted-foreground">AI 심리 코칭</div>
           </div>
           <button
@@ -459,8 +460,8 @@ export default function CoachingPage() {
             <div key={i}>
               <div className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : ""}`}>
                 {msg.role === "ai" && (
-                  <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                    <Brain className="w-4 h-4 text-primary-foreground" />
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center shrink-0 mt-0.5 shadow-sm overflow-hidden">
+                    <img src={CHITO_MAIN_URL} alt="치토" className="w-7 h-7 object-contain" />
                   </div>
                 )}
                 <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "user" ? "gradient-primary text-primary-foreground rounded-br-md shadow-sm" : "bg-card border border-primary/15 rounded-bl-md shadow-sm"}`}>
@@ -521,7 +522,7 @@ export default function CoachingPage() {
           ))}
           {isTyping && messages[messages.length - 1]?.role !== "ai" && (
             <div className="flex gap-2.5">
-              <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center shrink-0 shadow-sm"><Brain className="w-4 h-4 text-primary-foreground" /></div>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center shrink-0 shadow-sm overflow-hidden"><img src={CHITO_MAIN_URL} alt="치토" className="w-7 h-7 object-contain" /></div>
               <div className="bg-card border border-primary/15 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                 <div className="flex gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "0ms" }} />
