@@ -15,10 +15,12 @@ type RedeemResult = {
   valid_until?: string;
 };
 
-const rpc = supabase.rpc as unknown as (
-  fn: string,
-  args: Record<string, unknown>,
-) => Promise<{ data: RedeemResult | null; error: unknown }>;
+// supabase.rpc를 변수로 분리하면 this 바인딩이 끊겨 런타임 에러 발생 — 반드시 래핑
+const rpc = (fn: string, args: Record<string, unknown>) =>
+  (supabase.rpc as unknown as (
+    f: string,
+    a: Record<string, unknown>,
+  ) => Promise<{ data: RedeemResult | null; error: unknown }>).call(supabase, fn, args);
 
 const ERROR_MESSAGES: Record<string, string> = {
   NOT_FOUND: '존재하지 않는 코드예요. 다시 확인해주세요.',

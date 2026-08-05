@@ -6,9 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
-const rpc = supabase.rpc as unknown as (
-  fn: string,
-) => Promise<{ data: string | null; error: unknown }>;
+// supabase.rpc를 변수로 분리하면 this 바인딩이 끊겨 런타임 에러 발생 — 반드시 래핑
+const rpc = (fn: string) =>
+  (supabase.rpc as unknown as (
+    f: string,
+  ) => Promise<{ data: string | null; error: unknown }>).call(supabase, fn);
 
 /** 내 초대코드 표시 + 공유 카드 */
 export default function ReferralCard() {
