@@ -1,27 +1,32 @@
 /**
  * Agent Actions — actual DB operations the AI coach can perform
+ * 감정 저장/조회는 emotion_records로 일원화 (레거시 emotions 테이블 미사용, 2026-08-05)
  */
 import { supabase } from "@/integrations/supabase/client";
+import { emotionEmojiMap, emotionOptions, type PrimaryEmotion } from "@/lib/emotion-agent-types";
 
 export interface SaveEmotionParams {
   userId: string;
-  emoji: string;
+  category: string; // PrimaryEmotion key ('happy' | 'neutral' | ...)
   score: number;
   memo: string;
 }
 
 /**
- * Action 1: Save emotion record to emotions table
+ * Action 1: Save emotion record (emotion_records)
  */
 export async function saveEmotionRecord(params: SaveEmotionParams) {
   const { data, error } = await supabase
-    .from("emotions")
+    .from("emotion_records")
     .insert({
       user_id: params.userId,
-      emoji: params.emoji,
-      score: params.score,
-      memo: params.memo,
-    })
+      primary_emotion: params.category,
+      emotion_score: params.score,
+      situation: params.memo,
+      source: "coaching_chat",
+      conversation_log: [],
+      recorded_at: new Date().toISOString(),
+    } as any)
     .select()
     .single();
 
@@ -30,18 +35,18 @@ export async function saveEmotionRecord(params: SaveEmotionParams) {
 }
 
 /**
- * Action 2: Get recent 7 days emotions
+ * Action 2: Get recent 7 days emotion records
  */
 export async function getRecentEmotions(userId: string) {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const { data, error } = await supabase
-    .from("emotions")
-    .select("*")
+    .from("emotion_records")
+    .select("primary_emotion, emotion_score, situation, recorded_at")
     .eq("user_id", userId)
-    .gte("created_at", sevenDaysAgo.toISOString())
-    .order("created_at", { ascending: false });
+    .gte("recorded_at", sevenDaysAgo.toISOString())
+    .order("recorded_at", { ascending: false });
 
   if (error) throw error;
   return data || [];
@@ -76,7 +81,10 @@ export async function recommendTest(emotionCategory: string) {
  */
 export function buildEmotionSummary(emotions: any[]): string {
   if (!emotions || emotions.length === 0) return "";
-  return emotions.map(e =>
-    `- ${new Date(e.created_at).toLocaleDateString("ko-KR")}: ${e.emoji}${e.memo ? " (" + e.memo + ")" : ""}`
-  ).join("\n");
+  return emotions.map(e => {
+    const key = e.primary_emotion as PrimaryEmotion;
+    const emoji = emotionEmojiMap[key] ?? "";
+    const label = emotionOptions.find(o => o.key === key)?.label ?? e.primary_emotion;
+    return `- ${new Date(e.recorded_at).toLocaleDateString("ko-KR")}: ${emoji} ${label}${e.situation ? " (" + e.situation + ")" : ""}`;
+  }).join("\n");
 }

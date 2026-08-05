@@ -227,17 +227,6 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
       });
       if (error) throw error;
 
-      // Also save to legacy emotions table for compatibility
-      const emojiMap: Record<PrimaryEmotion, string> = {
-        happy: '😊', calm: '😌', neutral: '😐', sad: '😢', angry: '😤', anxious: '😰',
-      };
-      await supabase.from('emotions').upsert({
-        user_id: userId,
-        emoji: emojiMap[journalData.primaryEmotion],
-        score: journalData.emotionScore,
-        memo: journalData.situation || null,
-      }, { onConflict: 'user_id' });
-
       // Update streak
       const today = new Date().toISOString().split('T')[0];
       const { data: streak } = await supabase

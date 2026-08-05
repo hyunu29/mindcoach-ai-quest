@@ -174,10 +174,13 @@ source                  text NOT NULL
 source_conversation_id  uuid
 ```
 
-## emotions (레거시 간단 기록)
+## emotions (레거시 — 2026-08-05부터 앱 미사용)
 ```
 id / user_id / emoji / score(int) / memo / created_at
 ```
+> 감정 데이터는 `emotion_records`로 일원화됨 (홈 카드·주간 차트·AI 코칭 저장·내 기록 모두).
+> 이 테이블은 과거 데이터 보존용으로만 남아 있음. unique(user_id) 제약 없음 —
+> 과거 `upsert(onConflict: 'user_id')` 호출이 42P10으로 조용히 실패하던 이력 있음.
 
 ## coaching_sessions
 ```

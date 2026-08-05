@@ -12,6 +12,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend,
 } from "recharts";
+import { emotionEmojiMap, type PrimaryEmotion } from "@/lib/emotion-agent-types";
 
 /* ─── Risk helper ────────────────────────────────── */
 
@@ -27,6 +28,7 @@ function getRiskBadge(level: string) {
 
 const EMOTION_COLORS: Record<string, string> = {
   "😊": "hsl(160 84% 39%)",
+  "😌": "hsl(200 80% 55%)",
   "😐": "hsl(220 9% 66%)",
   "😢": "hsl(239 84% 67%)",
   "😤": "hsl(38 92% 50%)",
@@ -35,7 +37,8 @@ const EMOTION_COLORS: Record<string, string> = {
 
 const EMOTION_LABELS: Record<string, string> = {
   "😊": "좋아요",
-  "😐": "보통이에요",
+  "😌": "편안해요",
+  "😐": "그저 그래요",
   "😢": "우울해요",
   "😤": "짜증나요",
   "😰": "불안해요",
@@ -61,12 +64,21 @@ export default function HistoryPage() {
       const [testsRes, coachingRes, emotionsRes] = await Promise.all([
         supabase.from("test_results").select("*, tests(name, category)").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("coaching_sessions").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }),
-        supabase.from("emotions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
+        supabase.from("emotion_records").select("id, primary_emotion, emotion_score, situation, recorded_at").eq("user_id", user.id).order("recorded_at", { ascending: false }).limit(100),
       ]);
 
       setTestResults(testsRes.data || []);
       setCoachingSessions(coachingRes.data || []);
-      setEmotions(emotionsRes.data || []);
+      // 기존 렌더 로직(emoji/memo/created_at 기반)에 맞게 정규화
+      setEmotions(
+        ((emotionsRes.data || []) as any[]).map((r) => ({
+          id: r.id,
+          emoji: emotionEmojiMap[r.primary_emotion as PrimaryEmotion] ?? "😐",
+          score: r.emotion_score,
+          memo: r.situation,
+          created_at: r.recorded_at,
+        })),
+      );
       setLoading(false);
     };
     load();

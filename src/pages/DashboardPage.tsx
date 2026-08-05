@@ -9,31 +9,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { CharacterAvatar } from "@/components/character/CharacterAvatar";
 import { CHITO } from "@/lib/character/chito";
 import { calculateEmotionTrend, TREND_COPY } from "@/lib/character/trend";
-import type { PrimaryEmotion } from "@/lib/emotion-agent-types";
+import { emotionOptions, emotionEmojiMap, type PrimaryEmotion } from "@/lib/emotion-agent-types";
 import { track } from "@/lib/analytics";
 
-const emotionOptions = [
-  { emoji: "😊", label: "좋아요", score: 5, primary: 'happy' as PrimaryEmotion },
-  { emoji: "😐", label: "보통이에요", score: 4, primary: 'calm' as PrimaryEmotion },
-  { emoji: "😢", label: "우울해요", score: 2, primary: 'sad' as PrimaryEmotion },
-  { emoji: "😤", label: "짜증나요", score: 2, primary: 'angry' as PrimaryEmotion },
-  { emoji: "😰", label: "불안해요", score: 1, primary: 'anxious' as PrimaryEmotion },
-];
+interface TodayEmotionRecord {
+  primary_emotion: PrimaryEmotion;
+  emotion_score: number;
+  situation: string | null;
+  source: string;
+}
 
-function todayToEmotion(today: { emoji?: string | null; score?: number | null } | null): PrimaryEmotion {
-  if (!today) return 'neutral';
-  const match = emotionOptions.find(
-    (e) => e.emoji === today.emoji || e.label === today.emoji,
-  );
-  return match?.primary ?? 'neutral';
+// 로컬(사용자 시간대) 기준 YYYY-MM-DD 키
+function localDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 const VIEWED_HOME_KEY = 'mc_character_viewed_home_date';
 
 export default function DashboardPage() {
-  const [selectedEmotion, setSelectedEmotion] = useState<number | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
-  const [todayEmotion, setTodayEmotion] = useState<any>(null);
+  const [todayEmotion, setTodayEmotion] = useState<TodayEmotionRecord | null>(null);
   const [recentResults, setRecentResults] = useState<any[]>([]);
   const [weekData, setWeekData] = useState<{ day: string; score: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,21 +47,19 @@ export default function DashboardPage() {
 
       setNickname(profile?.nickname || user.email?.split("@")[0] || null);
 
-      // Today's emotion
-      const today = new Date().toISOString().split("T")[0];
+      // Today's emotion (emotion_records, 로컬 자정 기준)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
       const { data: todayEmotions } = await supabase
-        .from("emotions")
-        .select("*")
+        .from("emotion_records")
+        .select("primary_emotion, emotion_score, situation, source")
         .eq("user_id", user.id)
-        .gte("created_at", today + "T00:00:00")
-        .lte("created_at", today + "T23:59:59")
-        .order("created_at", { ascending: false })
+        .gte("recorded_at", todayStart.toISOString())
+        .order("recorded_at", { ascending: false })
         .limit(1);
 
       if (todayEmotions && todayEmotions.length > 0) {
-        setTodayEmotion(todayEmotions[0]);
-        const idx = emotionOptions.findIndex(e => e.label === todayEmotions[0].emoji || e.emoji === todayEmotions[0].emoji);
-        if (idx >= 0) setSelectedEmotion(idx);
+        setTodayEmotion(todayEmotions[0] as unknown as TodayEmotionRecord);
       }
 
       // Recent test results
@@ -79,27 +72,28 @@ export default function DashboardPage() {
 
       setRecentResults(results || []);
 
-      // Weekly emotion data
+      // Weekly emotion data (emotion_records)
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 6);
+      weekAgo.setHours(0, 0, 0, 0);
       const { data: weekEmotions } = await supabase
-        .from("emotions")
-        .select("score, created_at")
+        .from("emotion_records")
+        .select("emotion_score, recorded_at")
         .eq("user_id", user.id)
-        .gte("created_at", weekAgo.toISOString())
-        .order("created_at", { ascending: true });
+        .gte("recorded_at", weekAgo.toISOString())
+        .order("recorded_at", { ascending: true });
 
       const days = ["일", "월", "화", "수", "목", "금", "토"];
       const chartData: { day: string; score: number | null }[] = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().split("T")[0];
+        const dateKey = localDateKey(d);
         const dayEmotions = (weekEmotions || []).filter(
-          (e) => e.created_at.startsWith(dateStr)
+          (e) => localDateKey(new Date(e.recorded_at)) === dateKey
         );
         const avg = dayEmotions.length > 0
-          ? Math.round(dayEmotions.reduce((s, e) => s + e.score, 0) / dayEmotions.length)
+          ? Math.round(dayEmotions.reduce((s, e) => s + e.emotion_score, 0) / dayEmotions.length)
           : null;
         chartData.push({ day: days[d.getDay()], score: avg });
       }
@@ -117,7 +111,7 @@ export default function DashboardPage() {
   }, [weekData]);
 
   const characterEmotion: PrimaryEmotion = useMemo(
-    () => todayToEmotion(todayEmotion),
+    () => todayEmotion?.primary_emotion ?? 'neutral',
     [todayEmotion],
   );
 
@@ -176,43 +170,35 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      {/* Emotion Picker */}
+      {/* Today's Emotion (기록은 감정 트래킹으로 일원화 — 여기서는 요약 + 진입 CTA만) */}
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
-        <h2 className="font-bold mb-3">오늘의 감정은 어떤가요?</h2>
+        <h2 className="font-bold mb-3">오늘의 감정</h2>
         {todayEmotion ? (
           <div className="text-center py-2">
-            <span className="text-3xl">{emotionOptions.find(e => e.label === todayEmotion.emoji || e.emoji === todayEmotion.emoji)?.emoji || todayEmotion.emoji}</span>
-            {todayEmotion.memo?.startsWith("[AI 코치]") ? (
-              <div className="mt-2">
-                <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">🤖 AI 코치가 기록</span>
-                <p className="text-xs text-muted-foreground mt-1">{todayEmotion.memo.replace("[AI 코치] ", "")}</p>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground mt-2">오늘 이미 감정을 기록했어요!</p>
+            <span className="text-3xl">{emotionEmojiMap[todayEmotion.primary_emotion] ?? "😐"}</span>
+            <p className="text-sm font-medium mt-1.5">
+              {emotionOptions.find(e => e.key === todayEmotion.primary_emotion)?.label ?? ""}
+            </p>
+            {todayEmotion.source === "coaching_chat" && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary mt-1.5">
+                💬 AI 코칭 중 기록
+              </span>
             )}
-            <Button variant="ghost" size="sm" className="mt-1" onClick={() => navigate("/emotion")}>
-              수정하기 →
+            {todayEmotion.situation && (
+              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">"{todayEmotion.situation}"</p>
+            )}
+            <Button variant="ghost" size="sm" className="mt-1 text-primary" onClick={() => navigate("/emotion")}>
+              한 번 더 기록하기 →
             </Button>
           </div>
         ) : (
-          <div className="flex gap-3 justify-center">
-            {emotionOptions.map((e, i) => (
-              <button
-                key={e.label}
-                onClick={() => {
-                  setSelectedEmotion(i);
-                  navigate("/emotion");
-                }}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 active:scale-95 ${
-                  selectedEmotion === i
-                    ? "bg-primary/10 ring-2 ring-primary/30"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <span className="text-2xl">{e.emoji}</span>
-                <span className="text-[10px] text-muted-foreground">{e.label}</span>
-              </button>
-            ))}
+          <div className="text-center py-2 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              아직 오늘의 기록이 없어요. 치토와 대화하며 1분 만에 기록해보세요.
+            </p>
+            <Button variant="hero" className="rounded-xl" onClick={() => navigate("/emotion")}>
+              치토와 감정 기록하기
+            </Button>
           </div>
         )}
       </Card>

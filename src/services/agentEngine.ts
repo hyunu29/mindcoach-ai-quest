@@ -52,7 +52,7 @@ export async function runAgentActions(
     try {
       const saved = await saveEmotionRecord({
         userId,
-        emoji: detected.emoji,
+        category: detected.category,
         score: detected.score,
         memo,
       });
