@@ -80,21 +80,69 @@ serve(async (req) => {
       return json(400, { error: "AMOUNT_MISMATCH" });
     }
 
-    // 3-4. PG 검증 (Mock: paymentKey 형식 체크)
-    const pgVerified = typeof paymentKey === "string" && paymentKey.startsWith("mock_");
-    if (!pgVerified) {
-      await admin.from("payments").update({
-        status: "failed",
-        failed_at: new Date().toISOString(),
-        metadata: {
-          ...(payment.metadata ?? {}),
-          fail_reason: "PG_VERIFY_FAILED",
-          payment_key: paymentKey,
+    // 3-4. PG 검증 — 토스페이먼츠 결제 승인 API
+    // 가맹 계약 전에는 문서 공용 테스트 시크릿 키로 동작 (실청구 없음).
+    // mock_ 키는 ALLOW_MOCK_PAYMENTS=true일 때만 허용 (개발용 시뮬레이터).
+    const TOSS_SECRET_KEY =
+      Deno.env.get("TOSS_SECRET_KEY") ?? "test_sk_docs_OaPz8L5KdmQXkzRz3y47BMw6";
+    const allowMock = Deno.env.get("ALLOW_MOCK_PAYMENTS") === "true";
+    const isMockKey = typeof paymentKey === "string" && paymentKey.startsWith("mock_");
+
+    let pgAmount: number;
+    let pgResponse: Record<string, unknown> | null = null;
+
+    if (isMockKey) {
+      if (!allowMock) {
+        await admin.from("payments").update({
+          status: "failed",
+          failed_at: new Date().toISOString(),
+          metadata: {
+            ...(payment.metadata ?? {}),
+            fail_reason: "MOCK_NOT_ALLOWED",
+            payment_key: paymentKey,
+          },
+        }).eq("order_id", orderId).eq("status", "pending");
+        return json(400, { error: "PG_VERIFY_FAILED" });
+      }
+      pgAmount = amount;
+    } else {
+      const confirmRes = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${btoa(TOSS_SECRET_KEY + ":")}`,
+          "Content-Type": "application/json",
         },
-      }).eq("order_id", orderId).eq("status", "pending");
-      return json(400, { error: "PG_VERIFY_FAILED" });
+        body: JSON.stringify({ paymentKey, orderId, amount }),
+      });
+      const confirmBody = await confirmRes.json().catch(() => null);
+
+      if (!confirmRes.ok) {
+        const failCode = confirmBody?.code ?? "PG_VERIFY_FAILED";
+        const failMessage = confirmBody?.message ?? "결제 승인에 실패했습니다";
+        console.error("toss confirm failed", orderId, confirmRes.status, failCode, failMessage);
+        await admin.from("payments").update({
+          status: "failed",
+          failed_at: new Date().toISOString(),
+          metadata: {
+            ...(payment.metadata ?? {}),
+            fail_reason: failCode,
+            fail_message: failMessage,
+            payment_key: paymentKey,
+          },
+        }).eq("order_id", orderId).eq("status", "pending");
+        return json(400, { error: failCode, message: failMessage });
+      }
+
+      pgAmount = Number(confirmBody?.totalAmount ?? amount);
+      pgResponse = {
+        method: confirmBody?.method,
+        approvedAt: confirmBody?.approvedAt,
+        receiptUrl: confirmBody?.receipt?.url,
+        totalAmount: confirmBody?.totalAmount,
+        status: confirmBody?.status,
+      };
     }
-    const pgAmount = amount; // Mock: 클라 amount 그대로. 실제 PG는 PG 응답값.
+
     if (pgAmount !== payment.amount) {
       return json(400, { error: "PG_AMOUNT_MISMATCH" });
     }
@@ -112,6 +160,7 @@ serve(async (req) => {
             paymentKey,
             amount: pgAmount,
             verifiedAt: new Date().toISOString(),
+            pg: pgResponse,
           },
         },
       })
