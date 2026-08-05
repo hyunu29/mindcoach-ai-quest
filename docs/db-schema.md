@@ -192,6 +192,18 @@ messages                jsonb NOT NULL
 created_at / updated_at timestamptz NOT NULL
 ```
 
+## event_codes / event_code_redemptions (2026-08-05)
+```
+event_codes: id / code(UNIQUE) / label / credits_granted(기본500) / valid_until / max_redemptions(null=무제한) / created_at
+event_code_redemptions: id / event_code_id / user_id / redeemed_at  (UNIQUE(event_code_id,user_id))
+```
+> RLS 정책 없이 활성화 — SECURITY DEFINER RPC로만 접근. 등록 시 valid_until까지
+> 전 유료검사 user_test_access + user_credits(source='event') 발급.
+> 발급된 코드: `YONKOTV` (연고티비, ~2026-08-31 KST, 최대 20명)
+
+**profiles 추가 컬럼**: `referral_code`(내 초대코드, partial unique) / `referred_by`(초대한 사람 uuid, 1회만 설정)
+**academy_test_vouchers.source**: 'welcome' | 'weekly' | **'referral'** (academy_id는 referral일 때 null)
+
 ---
 
 ## 주요 RPC 함수 (SECURITY DEFINER)
@@ -211,6 +223,9 @@ created_at / updated_at timestamptz NOT NULL
 | `consume_ai_credit_server(uuid,numeric)` | 서버 사후 차감 (다중 period 순차) | service_role |
 | `get_remaining_credits(uuid)` | 유효 period 잔량 합산 | service_role |
 | `my_academy_id()` / `my_admin_academy_ids()` / `my_admin_student_ids()` | RLS 재귀 우회 헬퍼 | authenticated |
+| `redeem_event_code(text)` | 이벤트 코드 등록 (전 유료검사 해금 + 크레딧) | authenticated |
+| `get_my_referral_code()` | 내 초대코드 조회/생성 (MYCH-XXXXXX) | authenticated |
+| `redeem_referral_code(text)` | 친구 초대코드 등록 (양쪽 이용권3+크레딧10) | authenticated |
 
 ## 알려진 함정 (반복 사고 방지)
 

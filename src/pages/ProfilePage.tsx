@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { CHITO, CHITO_MAIN_URL } from "@/lib/character/chito";
+import CodeRedeemCard from "@/components/rewards/CodeRedeemCard";
+import ReferralCard from "@/components/rewards/ReferralCard";
 import AcademyCodeInput, { type AcademyLookup } from "@/components/academy/AcademyCodeInput";
 import PrivacyDisclosureModal from "@/components/academy/PrivacyDisclosureModal";
 import { useConnectAcademy } from "@/hooks/useConnectAcademy";
@@ -241,6 +243,12 @@ export default function ProfilePage() {
           </div>
         )}
       </Card>
+
+      {/* Event / referral code redeem */}
+      <CodeRedeemCard onRedeemed={() => void refreshVouchers()} />
+
+      {/* Referral invite */}
+      <ReferralCard />
 
       {/* Academy connection */}
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm space-y-3">
