@@ -28,7 +28,7 @@ export default function ReferralCard() {
 
   const copyShareText = async () => {
     if (!myCode) return;
-    const text = `마이치에서 치토와 함께 마음을 돌봐요 🥔\n가입 후 마이페이지에서 내 초대코드 [${myCode}]를 등록하면, 우리 둘 다 유료검사 이용권 3개 + AI 크레딧 10개를 받아요!\nhttps://mindcoach-ai-quest.vercel.app`;
+    const text = `마이치에서 치토와 함께 마음을 돌봐요 🥔\n가입 후 마이페이지에서 내 초대코드 [${myCode}]를 등록하면, 우리 둘 다 유료검사 이용권 3개 + AI 크레딧 10개를 받아요!\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
