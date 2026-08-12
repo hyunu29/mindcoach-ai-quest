@@ -12,6 +12,10 @@ export const CHITO = {
 
 export const CHITO_MAIN_URL = '/chito/main.webp';
 
+// 2026-08-13 확정 브랜드 자산: 엠블럼(투명 PNG, 작은 아바타·아이콘용) / 워드마크(로고타입)
+export const CHITO_EMBLEM_URL = '/brand/emblem.png';
+export const MYCH_WORDMARK_URL = '/brand/wordmark.png';
+
 export function getChitoEmotionUrl(emotion: PrimaryEmotion): string {
   return `/chito/${emotion}.webp`;
 }

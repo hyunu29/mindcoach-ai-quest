@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
@@ -72,9 +72,8 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-6 bg-background">
       <div className="w-full max-w-sm animate-reveal-up space-y-6">
         <div className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-6 h-6 text-primary" />
-            <span className="text-xl font-bold">마이치</span>
+          <div className="flex items-center justify-center mb-4">
+            <img src="/brand/wordmark.png" alt="마이치" className="h-12 w-auto" />
           </div>
           <h1 className="text-2xl font-bold mb-1">시작하기</h1>
           <p className="text-sm text-muted-foreground">카카오 계정으로 1초 만에 시작하세요.</p>

@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+﻿import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ import {
   type DomainScores,
   type DomainKey,
 } from "@/lib/character/recommend";
-import { CHITO_MAIN_URL } from "@/lib/character/chito";
+import { CHITO_EMBLEM_URL } from "@/lib/character/chito";
 
 function getBarColor(score: number, max: number) {
   const pct = (score / max) * 100;
@@ -383,7 +383,7 @@ export default function ResultsPage() {
         <Card className="p-5 rounded-2xl border-0 shadow-sm bg-gradient-to-br from-primary/10 via-primary/5 to-purple-500/10">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/70 flex items-center justify-center shrink-0 overflow-hidden">
-              <img src={CHITO_MAIN_URL} alt="치토" className="w-9 h-9 object-contain" loading="lazy" />
+              <img src={CHITO_EMBLEM_URL} alt="치토" className="w-9 h-9 object-contain" loading="lazy" />
             </div>
             <div className="flex-1">
               <div className="text-xs font-semibold text-primary mb-1">치토의 조언</div>

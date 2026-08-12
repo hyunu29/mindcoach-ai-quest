@@ -1,12 +1,10 @@
-import { Sparkles } from "lucide-react";
-
 export default function LandingFooter() {
   return (
     <footer className="py-12 px-6 border-t border-border/50">
       <div className="container max-w-4xl">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-2 font-bold">
-            <Sparkles className="w-4 h-4 text-primary" />
+            <img src="/brand/emblem.png" alt="" className="w-5 h-5 object-contain" />
             마이치
           </div>
           <div className="flex gap-6 text-sm text-muted-foreground">

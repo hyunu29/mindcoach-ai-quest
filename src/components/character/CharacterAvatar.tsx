@@ -25,7 +25,7 @@ export function CharacterAvatar({ emotion, size, className }: Props) {
       src={src}
       alt={`${CHITO.name}${emotion ? ` - ${emotion}` : ''}`}
       onError={() => setErrored(true)}
-      className={`object-contain ${SIZE_CLASS[size]} ${className ?? ''}`}
+      className={`object-cover rounded-3xl ${SIZE_CLASS[size]} ${className ?? ''}`}
       loading="lazy"
     />
   );
