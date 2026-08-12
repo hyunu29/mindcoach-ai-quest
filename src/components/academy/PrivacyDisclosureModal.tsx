@@ -62,8 +62,8 @@ export default function PrivacyDisclosureModal({
               <Gift className="w-4 h-4" /> 연결 즉시 지급되는 혜택
             </p>
             <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground ml-6 list-disc">
-              <li>유료 검사 무료 이용권 3장 (30일 유효)</li>
-              <li>AI 코칭 크레딧 20개</li>
+              <li>전 유료검사 학원 혜택가 적용 (단품 2,900원 · 일반가 5,900원)</li>
+              <li>환영 AI 코칭 크레딧 10개 + 매주 크레딧 5개 자동 지급</li>
               <li>매주 유료 검사 이용권 1장 + 크레딧 5개 추가 지급</li>
             </ul>
           </div>

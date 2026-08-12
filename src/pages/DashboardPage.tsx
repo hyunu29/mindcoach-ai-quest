@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "rec
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { CharacterAvatar } from "@/components/character/CharacterAvatar";
+import AdBannerSection from "@/components/ads/AdBannerSection";
 import { CHITO } from "@/lib/character/chito";
 import { calculateEmotionTrend, TREND_COPY } from "@/lib/character/trend";
 import { emotionOptions, emotionEmojiMap, type PrimaryEmotion } from "@/lib/emotion-agent-types";
@@ -283,6 +284,9 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
       </Card>
+
+      {/* Ad Banner */}
+      <AdBannerSection />
 
       {/* Recommended */}
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm">

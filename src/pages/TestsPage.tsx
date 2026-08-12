@@ -296,7 +296,7 @@ export default function TestsPage() {
             지금 무료로 시작해보세요
           </h2>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            가입만 하면 통합검사 + 인기 검사 3종을 무료로 응시할 수 있어요
+            가입만 하면 통합 심리검사를 무료로 응시하고, 필요한 간이 검사를 추천받을 수 있어요
           </p>
         </div>
 

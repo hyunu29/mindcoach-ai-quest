@@ -18,7 +18,7 @@ export function useConnectAcademy() {
       })
       .eq('id', user.id);
     if (!error) {
-      // 환영 팩 지급 (이용권 3장 + 크레딧 20). 실패해도 연결 자체는 성공 처리.
+      // 환영 팩 지급 (크레딧 10 — 2026-08-12 정책). 실패해도 연결 자체는 성공 처리.
       await (supabase.rpc as unknown as (
         fn: string,
         args: Record<string, unknown>,
