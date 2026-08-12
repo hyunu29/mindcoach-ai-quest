@@ -45,12 +45,16 @@ const TEST_IDS: Array<{ id: string; name: string }> = [
   { id: 'perfectionism', name: '완벽주의 검사' },
 ];
 
+// 2026-08-12 확정: 검사 단품 개인 5,900원 / 학원 연결 학생 2,900원 (학원 혜택가)
+export const SINGLE_TEST_PRICE = 5900;
+export const ACADEMY_SINGLE_TEST_PRICE = 2900;
+
 // TODO: 추후 DB tests 테이블의 price 컬럼으로 이전
 export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
   ...TEST_IDS.map((t) => ({
     productType: 'single_test' as const,
     productId: t.id,
-    amount: 2900,
+    amount: SINGLE_TEST_PRICE,
     name: t.name,
   })),
   {

@@ -28,7 +28,7 @@ export default function ReferralCard() {
 
   const copyShareText = async () => {
     if (!myCode) return;
-    const text = `마이치에서 치토와 함께 마음을 돌봐요 🥔\n가입 후 마이페이지에서 내 초대코드 [${myCode}]를 등록하면, 우리 둘 다 유료검사 이용권 3개 + AI 크레딧 10개를 받아요!\n${window.location.origin}`;
+    const text = `마이치에서 치토와 함께 마음을 돌봐요 🥔\n가입 후 마이페이지에서 내 초대코드 [${myCode}]를 등록하고 무료 통합 심리검사를 완료하면, 우리 둘 다 유료검사 이용권 1개 + AI 크레딧 5개를 받아요!\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -46,9 +46,10 @@ export default function ReferralCard() {
         <h2 className="font-bold">친구 초대</h2>
       </div>
       <p className="text-xs text-muted-foreground leading-relaxed">
-        친구가 가입하고 내 코드를 등록하면 <strong className="text-foreground">두 사람 모두</strong> 유료검사
-        이용권 <strong className="text-foreground">3개</strong> + AI 크레딧{' '}
-        <strong className="text-foreground">10개</strong>를 받아요.
+        친구가 가입해 내 코드를 등록하고 <strong className="text-foreground">통합 심리검사를 완료</strong>하면{' '}
+        <strong className="text-foreground">두 사람 모두</strong> 유료검사 이용권{' '}
+        <strong className="text-foreground">1개</strong> + AI 크레딧{' '}
+        <strong className="text-foreground">5개</strong>를 받아요.
       </p>
       <div className="flex items-center gap-2">
         <div className="flex-1 px-3 py-2.5 rounded-xl bg-background border border-border font-mono text-sm font-semibold tracking-wider text-center">

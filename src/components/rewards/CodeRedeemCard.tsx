@@ -63,9 +63,15 @@ export default function CodeRedeemCard({ onRedeemed }: Props) {
       if (eventRes?.error === 'NOT_FOUND') {
         const { data: refRes } = await rpc('redeem_referral_code', { p_code: trimmed });
         if (refRes?.ok) {
-          toast.success('🎁 친구 초대 보상 지급 완료!', {
-            description: '나와 친구 모두 유료검사 이용권 3개 + AI 크레딧 10개를 받았어요.',
-          });
+          if ((refRes as RedeemResult & { rewarded?: boolean }).rewarded) {
+            toast.success('🎁 친구 초대 보상 지급 완료!', {
+              description: '나와 친구 모두 유료검사 이용권 1개 + AI 크레딧 5개를 받았어요.',
+            });
+          } else {
+            toast.success('초대코드 등록 완료!', {
+              description: '통합 심리검사를 완료하면 나와 친구 모두에게 이용권 1개 + 크레딧 5개가 지급돼요.',
+            });
+          }
           setCode('');
           onRedeemed?.();
           return;

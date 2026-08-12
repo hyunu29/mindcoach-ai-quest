@@ -14,6 +14,7 @@ import { usePurchase } from "@/hooks/usePurchase";
 import { useUserTestAccess } from "@/hooks/useUserTestAccess";
 import { useMySubscription } from "@/hooks/useMySubscription";
 import { useAcademyVouchers } from "@/hooks/useAcademyVouchers";
+import { useSingleTestPrice } from "@/hooks/useSingleTestPrice";
 import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 
@@ -61,7 +62,7 @@ function getCardState(
   if (test.is_free) return { kind: "free", test };
   const owned = accessMap[test.id];
   if (owned) return { kind: "owned", test, daysRemaining: owned.daysRemaining };
-  return { kind: "paid", test, amount: priceMap[test.id] ?? 2900 };
+  return { kind: "paid", test, amount: priceMap[test.id] ?? 5900 };
 }
 
 function IntegratedBanner({ test, onClick }: { test: TestRow; onClick: () => void }) {
@@ -269,11 +270,13 @@ export default function TestsPage() {
     return others.filter((t) => t.category === activeCategory);
   }, [tests, activeCategory]);
 
+  const { price: singleTestPrice, isAcademyStudent } = useSingleTestPrice();
   const priceMap = useMemo(() => {
     const m: Record<string, number> = {};
-    SINGLE_TEST_DISPLAY.forEach((p) => { m[p.productId] = p.amount; });
+    // 학원 연결 학생은 전 검사 혜택가 (서버 create-payment-order가 최종 금액 재결정)
+    SINGLE_TEST_DISPLAY.forEach((p) => { m[p.productId] = singleTestPrice; });
     return m;
-  }, []);
+  }, [singleTestPrice]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-10 animate-reveal-up">
@@ -326,7 +329,9 @@ export default function TestsPage() {
         <div>
           <h2 className="text-lg md:text-xl font-bold">전체 검사 둘러보기</h2>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            단품 ₩2,900 · 결제 후 30일 동안 다시 볼 수 있어요
+            {isAcademyStudent
+              ? "🏫 학원 혜택가 단품 ₩2,900 (정가 ₩5,900) · 결제 후 30일 동안 다시 볼 수 있어요"
+              : "단품 ₩5,900 · 결제 후 30일 동안 다시 볼 수 있어요"}
           </p>
         </div>
 

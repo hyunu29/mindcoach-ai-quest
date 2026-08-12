@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Lock, Clock, UserCircle2, ArrowRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePurchase } from '@/hooks/usePurchase';
+import { useSingleTestPrice, SINGLE_TEST_PRICE } from '@/hooks/useSingleTestPrice';
 import type { AccessReason } from '@/hooks/useTestAccessCheck';
 import { track } from '@/lib/analytics';
 
@@ -14,12 +15,11 @@ interface TestPaywallProps {
   expiresAt?: string;
 }
 
-const PRICE = 2900;
-
 export function TestPaywall({ testSlug, testName, reason, expiresAt }: TestPaywallProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { purchase, loadingId } = usePurchase();
+  const { price: PRICE, isAcademyStudent } = useSingleTestPrice();
 
   useEffect(() => {
     void track('paywall_viewed', { test_id: testSlug, reason });
@@ -69,6 +69,11 @@ export function TestPaywall({ testSlug, testName, reason, expiresAt }: TestPaywa
                 <span className="font-semibold text-foreground">30일간 자유롭게 응시</span>할 수 있어요.
               </p>
               <div className="rounded-xl bg-muted/50 py-3">
+                {isAcademyStudent && (
+                  <div className="text-[11px] text-accent font-semibold mb-0.5">
+                    🏫 학원 혜택가 <span className="line-through text-muted-foreground font-normal">₩{SINGLE_TEST_PRICE.toLocaleString()}</span>
+                  </div>
+                )}
                 <span className="text-2xl font-bold text-primary">₩{PRICE.toLocaleString()}</span>
                 <span className="text-xs text-muted-foreground ml-1">/ 30일 이용권</span>
               </div>
@@ -89,6 +94,11 @@ export function TestPaywall({ testSlug, testName, reason, expiresAt }: TestPaywa
                 다시 30일 이용권을 구매하시겠어요?
               </p>
               <div className="rounded-xl bg-muted/50 py-3">
+                {isAcademyStudent && (
+                  <div className="text-[11px] text-accent font-semibold mb-0.5">
+                    🏫 학원 혜택가 <span className="line-through text-muted-foreground font-normal">₩{SINGLE_TEST_PRICE.toLocaleString()}</span>
+                  </div>
+                )}
                 <span className="text-2xl font-bold text-primary">₩{PRICE.toLocaleString()}</span>
                 <span className="text-xs text-muted-foreground ml-1">/ 30일 이용권</span>
               </div>

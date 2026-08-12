@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { findProduct, type ProductType } from "../_shared/pricing.ts";
+import { findProduct, ACADEMY_SINGLE_TEST_PRICE, type ProductType } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,23 +46,38 @@ serve(async (req) => {
     const orderId = `order_${crypto.randomUUID()}`;
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // 학원 연결 학생은 검사 단품 학원 혜택가 적용 (2026-08-12 가격 확정)
+    let amount = product.amount;
+    let academyBenefit = false;
+    if (product.productType === "single_test") {
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("academy_id")
+        .eq("id", userId)
+        .maybeSingle();
+      if (profile?.academy_id) {
+        amount = ACADEMY_SINGLE_TEST_PRICE;
+        academyBenefit = true;
+      }
+    }
+
     const { error: insertErr } = await admin.from("payments").insert({
       user_id: userId,
-      provider: "mock",
+      provider: "toss",
       order_id: orderId,
-      amount: product.amount,
+      amount,
       currency: "KRW",
       status: "pending",
       product_type: product.productType,
       product_id: product.productId,
-      metadata: {},
+      metadata: academyBenefit ? { academy_benefit_price: true } : {},
     });
     if (insertErr) {
       console.error("payments insert failed", insertErr);
       return json(500, { error: "INSERT_FAILED", message: insertErr.message });
     }
 
-    return json(200, { orderId, amount: product.amount, productName: product.name });
+    return json(200, { orderId, amount, productName: product.name });
   } catch (e) {
     console.error("create-payment-order error", e);
     return json(500, { error: "INTERNAL", message: String(e) });
