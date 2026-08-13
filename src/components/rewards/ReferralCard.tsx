@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, Gift } from 'lucide-react';
+import { Copy, Check, Gift, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { isKakaoShareAvailable, shareToKakao } from '@/lib/share';
+import { track } from '@/lib/analytics';
 
 // supabase.rpc를 변수로 분리하면 this 바인딩이 끊겨 런타임 에러 발생 — 반드시 래핑
 const rpc = (fn: string) =>
@@ -25,6 +27,21 @@ export default function ReferralCard() {
       if (typeof data === 'string') setMyCode(data);
     })();
   }, [user]);
+
+  const shareKakao = async () => {
+    if (!myCode) return;
+    const ok = await shareToKakao({
+      title: '마이치에서 치토와 함께 마음을 돌봐요 🥔',
+      description: `가입 후 마이페이지에서 내 초대코드 [${myCode}]를 등록하고 무료 통합 심리검사를 완료하면, 우리 둘 다 유료검사 이용권 1개 + AI 크레딧 5개를 받아요!`,
+      url: window.location.origin,
+      buttonTitle: '초대 받고 시작하기',
+    });
+    if (ok) {
+      void track('referral_shared', { channel: 'kakao' });
+    } else {
+      toast.error('카카오톡 공유를 열지 못했어요. 초대장 복사를 이용해주세요.');
+    }
+  };
 
   const copyShareText = async () => {
     if (!myCode) return;
@@ -65,6 +82,16 @@ export default function ReferralCard() {
           초대장 복사
         </Button>
       </div>
+      {isKakaoShareAvailable() && (
+        <Button
+          onClick={shareKakao}
+          disabled={!myCode}
+          className="w-full rounded-xl gap-1.5 bg-[#FEE500] text-[#191919] hover:bg-[#FDD800]"
+        >
+          <Share2 className="w-4 h-4" />
+          카카오톡으로 초대하기
+        </Button>
+      )}
     </Card>
   );
 }

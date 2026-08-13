@@ -24,6 +24,7 @@ import {
   type DomainKey,
 } from "@/lib/character/recommend";
 import { CHITO_EMBLEM_URL } from "@/lib/character/chito";
+import ShareResultCard from "@/components/results/ShareResultCard";
 
 function getBarColor(score: number, max: number) {
   const pct = (score / max) * 100;
@@ -537,6 +538,13 @@ export default function ResultsPage() {
           </div>
         </Card>
       )}
+
+      {/* Share */}
+      <ShareResultCard
+        testName={result.testName}
+        riskLabel={result.riskLabel}
+        testId={result.testId}
+      />
 
       {/* CTAs */}
       <div className="flex gap-3">
