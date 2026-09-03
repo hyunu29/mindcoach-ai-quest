@@ -1,4 +1,5 @@
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import SectionHeader from "@/components/landing/SectionHeader";
 
 const stats = [
   { number: "32가지", label: "수험생 심리 증후군 분류 체계" },
@@ -12,14 +13,19 @@ export default function ExpertSection() {
   return (
     <section id="expert" className="py-20 px-6" ref={ref}>
       <div className="container max-w-3xl text-center">
-        <h2 className="text-2xl md:text-3xl font-bold mb-4">
-          수험생 심리 전문가 자문 기반
-        </h2>
-        <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          마이치의 검사 체계와 콘텐츠는 메가스터디 학습심리 강사이자 저서{" "}
-          <span className="font-semibold text-foreground">『공부에 지친 학생들을 위한 심리 수업』</span>{" "}
-          저자인 현장 전문가의 자문을 받아 설계되었습니다.
-        </p>
+        <SectionHeader
+          eyebrow="전문가 자문"
+          title="수험생 심리 전문가 자문 기반"
+          subtitle={
+            <>
+              마이치의 검사 체계와 콘텐츠는 메가스터디 학습심리 강사이자 저서{" "}
+              <span className="font-semibold text-foreground">
+                『공부에 지친 학생들을 위한 심리 수업』
+              </span>{" "}
+              저자인 현장 전문가의 자문을 받아 설계되었습니다.
+            </>
+          }
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 md:gap-8 mt-12">

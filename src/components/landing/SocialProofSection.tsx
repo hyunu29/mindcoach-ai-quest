@@ -1,4 +1,5 @@
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import SectionHeader from "@/components/landing/SectionHeader";
 
 const reviews = [
   {
@@ -21,9 +22,11 @@ export default function SocialProofSection() {
   return (
     <section className="py-24 px-6" ref={ref}>
       <div className="container max-w-4xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-14">
-          학생들의 이야기
-        </h2>
+        <SectionHeader
+          className="mb-14"
+          eyebrow="함께한 마음들"
+          title="학생들의 이야기"
+        />
 
         <div className="grid md:grid-cols-3 gap-6">
           {reviews.map((r, i) => (

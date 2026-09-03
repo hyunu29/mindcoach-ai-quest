@@ -1,5 +1,7 @@
 import { Brain, MessageCircle, BarChart3, ShieldAlert } from "lucide-react";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import SectionHeader from "@/components/landing/SectionHeader";
+import ChatMockupCard from "@/components/landing/ChatMockupCard";
 
 const features = [
   {
@@ -34,12 +36,12 @@ export default function FeaturesSection() {
   return (
     <section id="features" className="py-24 px-6 bg-muted/50" ref={ref}>
       <div className="container max-w-5xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-4">
-          AI가 당신의 마음을 분석하고, 코칭합니다
-        </h2>
-        <p className="text-muted-foreground text-center mb-14 max-w-lg mx-auto">
-          수험생의 마음 건강을 위한 네 가지 핵심 기능
-        </p>
+        <SectionHeader
+          className="mb-14"
+          eyebrow="핵심 기능"
+          title="AI가 당신의 마음을 분석하고, 코칭합니다"
+          subtitle="수험생의 마음 건강을 위한 네 가지 핵심 기능"
+        />
 
         <div className="grid md:grid-cols-2 gap-6">
           {features.map((f, i) => (
@@ -55,6 +57,10 @@ export default function FeaturesSection() {
               <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-16">
+          <ChatMockupCard />
         </div>
       </div>
     </section>

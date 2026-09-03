@@ -1,4 +1,5 @@
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import SectionHeader from "@/components/landing/SectionHeader";
 
 const problems = [
   {
@@ -24,11 +25,17 @@ export default function ProblemSection() {
   return (
     <section className="py-24 px-6" ref={ref}>
       <div className="container max-w-4xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-14">
-          수험생 10명 중 7명이
-          <br className="md:hidden" />
-          <span className="gradient-text"> 학업 스트레스</span>를 겪고 있습니다
-        </h2>
+        <SectionHeader
+          className="mb-14"
+          eyebrow="수험생의 현실"
+          title={
+            <>
+              수험생 10명 중 7명이
+              <br className="md:hidden" />
+              <span className="gradient-text"> 학업 스트레스</span>를 겪고 있습니다
+            </>
+          }
+        />
 
         <div className="grid md:grid-cols-3 gap-6">
           {problems.map((p, i) => (

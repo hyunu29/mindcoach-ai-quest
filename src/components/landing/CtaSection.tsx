@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import SectionHeader from "@/components/landing/SectionHeader";
 
 export default function CtaSection() {
   const navigate = useNavigate();
@@ -14,13 +15,17 @@ export default function CtaSection() {
     <section className="py-24 px-6 relative overflow-hidden" ref={ref}>
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/10 to-primary/5" />
       <div className="container max-w-2xl text-center relative z-10">
-        <h2 className="text-2xl md:text-3xl font-bold mb-4">
-          지금, 나를 이해하는 첫 걸음을 시작하세요
-        </h2>
-        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-          무료로 심리검사를 받고 AI 코칭을 경험해보세요.
-        </p>
-        <Button variant="hero" size="xl" onClick={handleStart}>
+        <SectionHeader
+          className="mb-8"
+          eyebrow="지금 시작하기"
+          title="지금, 나를 이해하는 첫 걸음을 시작하세요"
+          subtitle="무료로 간이 심리검사를 받고 AI 코칭을 경험해보세요."
+        />
+        <Button
+          size="xl"
+          onClick={handleStart}
+          className="rounded-full px-9 gradient-primary gradient-primary-hover text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
+        >
           무료로 시작하기
         </Button>
       </div>

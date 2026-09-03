@@ -9,6 +9,7 @@ import { getRiskLevel } from "@/data/seed-data";
 import { scoreIntegratedTest } from "@/lib/integrated-test-scoring";
 import { toast } from "sonner";
 import { TestAccessGate } from "@/components/payment/TestAccessGate";
+import IntIntroGate from "@/components/tests/IntIntroGate";
 import { track } from "@/lib/analytics";
 import { isFreeTest } from "@/lib/payments/free-tests";
 
@@ -57,6 +58,7 @@ export default function TestTakingPage() {
   const [timeLeft, setTimeLeft] = useState(180);
   const [timerExpired, setTimerExpired] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   const startTimeRef = useRef(Date.now());
 
   // Fetch test from DB
@@ -77,6 +79,9 @@ export default function TestTakingPage() {
           questions: (data.questions as unknown as QuestionItem[]) || [],
         });
         setTimeLeft((data.duration_minutes || 3) * 60);
+        if (data.is_integrated && !data.is_coming_soon && !sessionStorage.getItem("int-intro-seen")) {
+          setShowIntro(true);
+        }
       }
       setLoading(false);
     };
@@ -91,9 +96,9 @@ export default function TestTakingPage() {
     void track('test_started', { test_id: test.id, test_name: test.name, is_free: isFreeTest(test.id) });
   }, [test]);
 
-  // Timer
+  // Timer (몰입 인트로가 떠 있는 동안은 흐르지 않음)
   useEffect(() => {
-    if (timerExpired || loading || !test || test.is_coming_soon) return;
+    if (timerExpired || loading || !test || test.is_coming_soon || showIntro) return;
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -104,7 +109,7 @@ export default function TestTakingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [timerExpired, loading, test]);
+  }, [timerExpired, loading, test, showIntro]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -260,6 +265,16 @@ export default function TestTakingPage() {
 
   return (
     <TestAccessGate testSlug={test.id} testName={test.name}>
+    {showIntro && (
+      <IntIntroGate
+        questionCount={questions.length}
+        durationMinutes={test.duration_minutes || 10}
+        onComplete={() => {
+          sessionStorage.setItem("int-intro-seen", "1");
+          setShowIntro(false);
+        }}
+      />
+    )}
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">

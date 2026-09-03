@@ -7,6 +7,7 @@ import SocialProofSection from "@/components/landing/SocialProofSection";
 import CtaSection from "@/components/landing/CtaSection";
 import LandingFooter from "@/components/landing/LandingFooter";
 import LandingNav from "@/components/landing/LandingNav";
+import FloatingMascotCta from "@/components/landing/FloatingMascotCta";
 
 export default function LandingPage() {
   return (
@@ -20,6 +21,7 @@ export default function LandingPage() {
       <SocialProofSection />
       <CtaSection />
       <LandingFooter />
+      <FloatingMascotCta />
     </div>
   );
 }

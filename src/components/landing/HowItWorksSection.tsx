@@ -1,5 +1,6 @@
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import { ClipboardList, PenLine, BarChart3 } from "lucide-react";
+import SectionHeader from "@/components/landing/SectionHeader";
 
 const steps = [
   {
@@ -28,9 +29,11 @@ export default function HowItWorksSection() {
   return (
     <section id="how-it-works" className="py-24 px-6 bg-muted/50" ref={ref}>
       <div className="container max-w-4xl">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-14">
-          5분이면 시작할 수 있어요
-        </h2>
+        <SectionHeader
+          className="mb-14"
+          eyebrow="이용 방법"
+          title="5분이면 시작할 수 있어요"
+        />
 
         <div className="grid md:grid-cols-3 gap-8">
           {steps.map((s, i) => (
