@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ClipboardCheck, ChevronRight, Clock, Sparkles, Compass,
+  ClipboardCheck, ChevronRight, Clock, Sparkles,
   Gift, Check, Crown, Loader2, Target,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ import { useAcademyVouchers } from "@/hooks/useAcademyVouchers";
 import { useSingleTestPrice } from "@/hooks/useSingleTestPrice";
 import { track } from "@/lib/analytics";
 import { toast } from "sonner";
+import { CHITO_EMBLEM_URL } from "@/lib/character/chito";
 
 interface TestRow {
   id: string;
@@ -72,8 +73,8 @@ function IntegratedBanner({ test, onClick }: { test: TestRow; onClick: () => voi
       onClick={onClick}
     >
       <div className="flex items-start gap-3 md:gap-4">
-        <div className="w-11 h-11 md:w-12 md:h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-          <Compass className="w-6 h-6" />
+        <div className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-white flex items-center justify-center shrink-0 shadow-md">
+          <img src={CHITO_EMBLEM_URL} alt="" className="w-8 h-8 md:w-9 md:h-9 object-contain" />
         </div>
         <div className="flex-1 min-w-0">
           <Badge className="bg-white/25 text-primary-foreground text-[10px] px-2 py-0.5 border-0 gap-1 mb-1.5">
@@ -142,16 +143,16 @@ function TestCard({
   const cta = (() => {
     switch (state.kind) {
       case "coming_soon":
-        return <Button disabled variant="outline" size="sm" className="w-full">준비중</Button>;
+        return <Button disabled variant="outline" size="sm" className="w-full rounded-full">준비중</Button>;
       case "free":
         return (
-          <Button variant="outline" size="sm" className="w-full" disabled={!hasQuestions} onClick={() => onNavigate(test.id)}>
+          <Button variant="outline" size="sm" className="w-full rounded-full" disabled={!hasQuestions} onClick={() => onNavigate(test.id)}>
             무료로 응시하기
           </Button>
         );
       case "owned":
         return (
-          <Button variant="outline" size="sm" className="w-full" disabled={!hasQuestions} onClick={() => onNavigate(test.id)}>
+          <Button variant="outline" size="sm" className="w-full rounded-full" disabled={!hasQuestions} onClick={() => onNavigate(test.id)}>
             검사 시작
           </Button>
         );
@@ -162,13 +163,13 @@ function TestCard({
               <Button
                 variant="secondary"
                 size="sm"
-                className="w-full mb-2"
+                className="w-full mb-2 rounded-full"
                 onClick={() => onRedeemVoucher(test)}
               >
                 🎁 이용권으로 응시 ({voucherCount})
               </Button>
             )}
-            <Button size="sm" className="w-full" disabled={purchasing} onClick={() => onPurchase(test)}>
+            <Button size="sm" className="w-full rounded-full" disabled={purchasing} onClick={() => onPurchase(test)}>
               {purchasing ? (<><Loader2 className="w-4 h-4 animate-spin mr-1.5" /> 결제창 준비 중...</>) : "구매하기"}
             </Button>
           </>
@@ -280,9 +281,10 @@ export default function TestsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-10 animate-reveal-up">
-      {/* Hero */}
-      <header className="space-y-2">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">심리검사</h1>
+      {/* Hero — 아이브로우 → 잉크 헤드라인 위계 */}
+      <header className="space-y-1.5">
+        <p className="gradient-text text-sm font-bold">내 마음 들여다보기</p>
+        <h1 className="text-[1.75rem] md:text-4xl font-bold tracking-[-0.02em]">심리검사</h1>
         <p className="text-sm md:text-base text-muted-foreground">
           무료 통합검사부터 시작해서 나에게 필요한 검사를 찾아보세요
         </p>

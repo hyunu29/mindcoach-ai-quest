@@ -134,6 +134,20 @@ export default function DashboardPage() {
     }
   }, [loading, characterEmotion, characterTrend]);
 
+  // 치토 인사 말풍선 분기 (CHITO-STORY-SCENARIO.md 대시보드 사양)
+  const chitoGreeting = useMemo(() => {
+    if (!todayEmotion) {
+      if (characterTrend === "declining" || characterTrend === "crashing") {
+        return "요즘 좀 무거웠지? 그래도 여기 와줘서 고마워.";
+      }
+      return "왔구나! 오늘 마음은 어때? 나한테 들려줄래?";
+    }
+    if (characterTrend === "rising") {
+      return "요즘 네 마음, 조금씩 가벼워지고 있는 게 느껴져.";
+    }
+    return "오늘 이야기 들려줘서 고마워. 네 덕분에 내 밤이 조금 밝아졌어.";
+  }, [todayEmotion, characterTrend]);
+
   const riskColor = (level: string) => {
     switch (level) {
       case "safe": return "text-green-600 bg-green-50";
@@ -160,16 +174,29 @@ export default function DashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">오늘도 마음 건강을 챙겨볼까요?</p>
       </div>
 
-      {/* Character Hero */}
-      <Card className="p-6 rounded-2xl border-border/50 shadow-sm text-center">
-        <CharacterAvatar emotion={characterEmotion} size="hero" className="mx-auto" />
-        <div className="mt-3">
-          <div className="font-bold">{CHITO.name}</div>
-          <div className="text-sm text-muted-foreground mt-0.5">
-            {TREND_COPY[characterTrend]}
+      {/* Character Hero — 치토의 밤 (다크 카드 + 말풍선) */}
+      <div className="relative rounded-3xl bg-[#0c0e18] overflow-hidden p-6 text-center shadow-[0_20px_50px_-20px_rgba(100,102,241,0.55)]">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse at center 35%, rgba(100,102,241,0.28) 0%, transparent 65%)",
+          }}
+        />
+        <div className="relative z-10">
+          {/* 말풍선 */}
+          <div className="relative mx-auto max-w-xs animate-pop-in">
+            <div className="bg-white rounded-2xl px-4 py-3 text-sm font-medium text-foreground shadow-md leading-relaxed">
+              “{chitoGreeting}”
+            </div>
+            <div className="mx-auto w-3 h-3 bg-white rotate-45 -mt-1.5" />
+          </div>
+          <CharacterAvatar emotion={characterEmotion} size="hero" className="mx-auto mt-4" />
+          <div className="mt-4">
+            <div className="font-bold text-white">{CHITO.name}</div>
+            <div className="text-sm text-white/60 mt-0.5">{TREND_COPY[characterTrend]}</div>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Today's Emotion (기록은 감정 트래킹으로 일원화 — 여기서는 요약 + 진입 CTA만) */}
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm">

@@ -17,6 +17,14 @@ interface Props {
   className?: string;
 }
 
+/* 원본 webp는 검은 배경이 박혀 있어 라이트 UI에서는 "밤을 담은 창문" 프레이밍이 필수
+ * (다크 라운드 카드 + 보라 글로우 — CHITO-STORY-SCENARIO.md §4) */
+const FRAME_CLASS: Record<Size, string> = {
+  hero: 'rounded-3xl ring-1 ring-primary/20 shadow-[0_16px_48px_-16px_rgba(100,102,241,0.5)]',
+  card: 'rounded-3xl ring-1 ring-primary/20 shadow-[0_12px_36px_-12px_rgba(100,102,241,0.45)]',
+  mini: 'rounded-xl ring-1 ring-primary/15',
+};
+
 export function CharacterAvatar({ emotion, size, className }: Props) {
   const [errored, setErrored] = useState(false);
   const src = errored || !emotion ? CHITO_MAIN_URL : getChitoEmotionUrl(emotion);
@@ -25,7 +33,9 @@ export function CharacterAvatar({ emotion, size, className }: Props) {
       src={src}
       alt={`${CHITO.name}${emotion ? ` - ${emotion}` : ''}`}
       onError={() => setErrored(true)}
-      className={`object-cover rounded-3xl ${SIZE_CLASS[size]} ${className ?? ''}`}
+      className={`object-cover ${FRAME_CLASS[size]} ${SIZE_CLASS[size]} ${
+        size === 'hero' ? 'animate-chito-float' : ''
+      } ${className ?? ''}`}
       loading="lazy"
     />
   );

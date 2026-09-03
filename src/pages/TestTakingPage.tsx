@@ -1,7 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, Clock, ArrowLeft, Loader2 } from "lucide-react";
@@ -9,7 +7,8 @@ import { getRiskLevel } from "@/data/seed-data";
 import { scoreIntegratedTest } from "@/lib/integrated-test-scoring";
 import { toast } from "sonner";
 import { TestAccessGate } from "@/components/payment/TestAccessGate";
-import IntIntroGate from "@/components/tests/IntIntroGate";
+import TestIntroGate from "@/components/tests/TestIntroGate";
+import { CHITO_MAIN_URL, CHITO_EMBLEM_URL } from "@/lib/character/chito";
 import { track } from "@/lib/analytics";
 import { isFreeTest } from "@/lib/payments/free-tests";
 
@@ -79,7 +78,7 @@ export default function TestTakingPage() {
           questions: (data.questions as unknown as QuestionItem[]) || [],
         });
         setTimeLeft((data.duration_minutes || 3) * 60);
-        if (data.is_integrated && !data.is_coming_soon && !sessionStorage.getItem("int-intro-seen")) {
+        if (!data.is_coming_soon && !sessionStorage.getItem(`test-intro-seen:${data.id}`)) {
           setShowIntro(true);
         }
       }
@@ -128,9 +127,18 @@ export default function TestTakingPage() {
       label: labels?.[i] ?? DEFAULT_LIKERT_LABELS[i] ?? `${min + i}점`,
     }));
   }, [test]);
+  // 선택 즉시 다음 문항으로 흘러가는 몰입 플로우 (마지막 문항 제외)
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSelect = (score: number) => {
     setAnswers((prev) => ({ ...prev, [current]: score }));
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    if (current < questions.length - 1) {
+      advanceTimerRef.current = setTimeout(() => setCurrent((c) => Math.min(c + 1, questions.length - 1)), 350);
+    }
   };
+  useEffect(() => () => {
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+  }, []);
 
   const progress = questions.length > 0 ? ((current + 1) / questions.length) * 100 : 0;
   const isLastQuestion = current === questions.length - 1;
@@ -263,102 +271,156 @@ export default function TestTakingPage() {
     );
   }
 
+  // 치토 마일스톤 응원 (CHITO-STORY-SCENARIO.md 검사 진행 사양)
+  const milestoneMessage = (() => {
+    const len = questions.length;
+    if (len < 8) return null;
+    if (current === Math.floor(len * 0.25)) return "잘하고 있어. 천천히 해도 돼.";
+    if (current === Math.floor(len * 0.5)) return "벌써 절반이야. 솔직하게 말해줘서 고마워.";
+    if (current === Math.floor(len * 0.75)) return "거의 다 왔어. 조금만 더!";
+    return null;
+  })();
+
   return (
     <TestAccessGate testSlug={test.id} testName={test.name}>
     {showIntro && (
-      <IntIntroGate
+      <TestIntroGate
+        testName={test.name}
+        isIntegrated={!!test.is_integrated}
         questionCount={questions.length}
         durationMinutes={test.duration_minutes || 10}
         onComplete={() => {
-          sessionStorage.setItem("int-intro-seen", "1");
+          sessionStorage.setItem(`test-intro-seen:${test.id}`, "1");
           setShowIntro(false);
         }}
       />
     )}
-    <div className="space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold truncate pr-4">{test.name}</h1>
-        <div className={`flex items-center gap-1.5 text-sm font-mono font-semibold shrink-0 ${
-          timerExpired ? "text-destructive" : timeLeft <= 30 ? "text-destructive" : "text-muted-foreground"
-        }`}>
-          <Clock className="w-4 h-4" />
-          {timerExpired ? "시간 초과" : formatTime(timeLeft)}
+
+    {/* 몰입 모드 — 다크 풀스크린 (청월당식) */}
+    <div className="fixed inset-0 z-40 bg-[#0c0e18] overflow-y-auto">
+      {/* 보라 radial 글로우 */}
+      <div
+        className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px]"
+        style={{
+          background: "radial-gradient(ellipse at center top, rgba(100,102,241,0.2) 0%, transparent 65%)",
+        }}
+      />
+
+      {submitting ? (
+        /* 제출 씬 — "네 마음을 정리하고 있어…" */
+        <div className="relative z-10 min-h-full flex flex-col items-center justify-center px-6 text-center">
+          <div className="w-40 h-40 rounded-[2rem] overflow-hidden mb-8 shadow-[0_0_60px_rgba(100,102,241,0.45)] animate-glow-pulse">
+            <img src={CHITO_MAIN_URL} alt="치토" className="w-full h-full object-cover" />
+          </div>
+          <p className="text-white text-lg font-medium leading-relaxed">
+            “잠깐만, 네 마음을 정리하고 있어…”
+          </p>
+          <Loader2 className="w-5 h-5 animate-spin text-white/50 mt-6" />
         </div>
-      </div>
+      ) : (
+        <div className="relative z-10 max-w-md mx-auto min-h-full flex flex-col px-5 py-5">
+          {/* 상단 바 */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => navigate("/tests")}
+              className="w-9 h-9 -ml-1.5 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="검사 목록으로"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-sm font-semibold text-white/70 truncate px-3">{test.name}</h1>
+            <div className={`flex items-center gap-1 text-xs font-mono font-semibold shrink-0 ${
+              timerExpired || timeLeft <= 30 ? "text-red-400" : "text-white/40"
+            }`}>
+              <Clock className="w-3.5 h-3.5" />
+              {timerExpired ? "시간 초과" : formatTime(timeLeft)}
+            </div>
+          </div>
 
-      {/* Progress */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5 text-xs text-muted-foreground">
-          <span>{current + 1} / {questions.length}</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <Progress value={progress} className="h-2 rounded-full" />
-      </div>
+          {/* 진행바 */}
+          <div className="mb-1.5 h-1 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#8B8DF7] to-[#C4B5FD] transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-white/35 mb-5">
+            <span>{current + 1} / {questions.length}</span>
+            <span>{Math.round(progress)}%</span>
+          </div>
 
-      {/* Question */}
-      <Card className="p-6 rounded-2xl border-border/50 shadow-sm">
-        <p className="text-xs text-muted-foreground mb-3 font-medium">
-          {currentSubdomain}
-        </p>
-        <p className="text-base font-medium leading-relaxed mb-6">
-          Q{current + 1}. {currentQuestion.text}
-        </p>
+          {/* 치토 마일스톤 응원 */}
+          {milestoneMessage && (
+            <div className="flex items-center gap-2.5 mb-5 animate-pop-in">
+              <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-[0_0_16px_rgba(164,166,255,0.4)]">
+                <img src={CHITO_EMBLEM_URL} alt="" className="w-6 h-6 object-contain" />
+              </span>
+              <p className="text-sm text-white/70 font-medium">“{milestoneMessage}”</p>
+            </div>
+          )}
 
-        {/* Likert scale */}
-        <div className="flex gap-2">
-          {likertOptions.map((opt) => {
-            const isSelected = answers[current] === opt.score;
-            return (
-              <button
-                key={opt.score}
-                onClick={() => handleSelect(opt.score)}
-                className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl border text-xs transition-all duration-200 active:scale-95 ${
-                  isSelected
-                    ? "gradient-primary text-primary-foreground border-transparent shadow-md scale-[1.02]"
-                    : "border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-primary/5"
-                }`}
+          {/* 문항 — 전환 애니메이션 */}
+          <div key={current} className="animate-question-in flex-1 flex flex-col">
+            <p className="text-[11px] text-white/35 font-medium mb-2.5">{currentSubdomain}</p>
+            <p className="text-white text-lg md:text-xl font-medium leading-[1.65] mb-8">
+              Q{current + 1}. {currentQuestion.text}
+            </p>
+
+            {/* Likert scale */}
+            <div className="flex gap-2">
+              {likertOptions.map((opt) => {
+                const isSelected = answers[current] === opt.score;
+                return (
+                  <button
+                    key={opt.score}
+                    onClick={() => handleSelect(opt.score)}
+                    className={`flex-1 flex flex-col items-center gap-1.5 py-3.5 px-1 rounded-xl border text-xs transition-all duration-200 active:scale-95 ${
+                      isSelected
+                        ? "bg-gradient-to-b from-[#E4E5FF] to-white text-[#2A2D8F] border-transparent shadow-[0_0_20px_rgba(164,166,255,0.35)] scale-[1.03]"
+                        : "bg-white/[0.06] border-white/10 text-white/55 hover:bg-white/10 hover:border-white/20"
+                    }`}
+                  >
+                    <span className="text-lg font-bold">{opt.score}</span>
+                    <span className="leading-tight text-center text-[10px] md:text-xs">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 내비게이션 */}
+          <div className="flex gap-3 mt-8 pb-2">
+            <Button
+              variant="ghost"
+              className="flex-1 rounded-full h-12 text-white/50 hover:text-white hover:bg-white/10 disabled:text-white/20"
+              disabled={current === 0}
+              onClick={() => setCurrent((c) => c - 1)}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              이전
+            </Button>
+
+            {isLastQuestion ? (
+              <Button
+                className="flex-1 rounded-full h-12 bg-gradient-to-r from-[#E4E5FF] to-white text-[#2A2D8F] font-semibold shadow-[0_0_20px_rgba(164,166,255,0.35)] hover:shadow-[0_0_30px_rgba(164,166,255,0.5)] hover:from-[#E4E5FF] hover:to-white disabled:opacity-40"
+                disabled={!allAnswered || submitting}
+                onClick={handleSubmit}
               >
-                <span className="text-lg font-bold">{opt.score}</span>
-                <span className="leading-tight text-center text-[10px] md:text-xs">{opt.label}</span>
-              </button>
-            );
-          })}
+                결과 보기
+              </Button>
+            ) : (
+              <Button
+                className="flex-1 rounded-full h-12 bg-white/10 text-white/80 font-semibold hover:bg-white/15 disabled:opacity-40"
+                disabled={answers[current] === undefined}
+                onClick={() => setCurrent((c) => c + 1)}
+              >
+                다음
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            )}
+          </div>
         </div>
-      </Card>
-
-      {/* Navigation */}
-      <div className="flex gap-3">
-        <Button
-          variant="outline"
-          className="flex-1 rounded-xl"
-          disabled={current === 0}
-          onClick={() => setCurrent((c) => c - 1)}
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          이전
-        </Button>
-
-        {isLastQuestion ? (
-          <Button
-            className="flex-1 rounded-xl gradient-primary text-primary-foreground"
-            disabled={!allAnswered || submitting}
-            onClick={handleSubmit}
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-            결과 보기
-          </Button>
-        ) : (
-          <Button
-            variant="default"
-            className="flex-1 rounded-xl"
-            onClick={() => setCurrent((c) => c + 1)}
-          >
-            다음
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        )}
-      </div>
+      )}
     </div>
     </TestAccessGate>
   );

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { CHITO_MAIN_URL } from "@/lib/character/chito";
 import { track } from "@/lib/analytics";
 
-interface IntIntroGateProps {
+interface TestIntroGateProps {
+  testName: string;
+  isIntegrated: boolean;
   questionCount: number;
   durationMinutes: number;
   onComplete: () => void;
@@ -14,23 +16,40 @@ interface IntroStep {
 }
 
 /**
- * INT 통합검사 몰입 인트로 — 청월당식 캐릭터 스토리텔링 게이트
- * (docs/design/DESIGN-TEMPLATES.md 레퍼런스 A). 다크 풀스크린 + 치토 일러 + 대화형 CTA.
+ * 검사 몰입 인트로 — 청월당식 캐릭터 스토리텔링 게이트 (전 검사 공통)
+ * (docs/design/DESIGN-TEMPLATES.md 레퍼런스 A · CHITO-STORY-SCENARIO.md 여정 1)
  */
-export default function IntIntroGate({ questionCount, durationMinutes, onComplete }: IntIntroGateProps) {
+export default function TestIntroGate({
+  testName,
+  isIntegrated,
+  questionCount,
+  durationMinutes,
+  onComplete,
+}: TestIntroGateProps) {
   const [step, setStep] = useState(0);
   const [leaving, setLeaving] = useState(false);
 
-  const steps: IntroStep[] = [
-    {
-      quote: "안녕, 나는 치토야.\n시작하기 전에… 요즘 마음이 어떤지\n물어봐도 될까?",
-      cta: "응, 좋아",
-    },
-    {
-      quote: `딱 ${durationMinutes}분이면 돼.\n${questionCount}문항에 솔직하게 답할수록\n네 마음을 더 정확하게 볼 수 있어.`,
-      cta: "내 마음 확인해볼래",
-    },
-  ];
+  const steps: IntroStep[] = isIntegrated
+    ? [
+        {
+          quote: "안녕, 나는 치토야.\n시작하기 전에… 요즘 마음이 어떤지\n물어봐도 될까?",
+          cta: "응, 좋아",
+        },
+        {
+          quote: `딱 ${durationMinutes}분이면 돼.\n${questionCount}문항에 솔직하게 답할수록\n네 마음을 더 정확하게 볼 수 있어.`,
+          cta: "내 마음 확인해볼래",
+        },
+      ]
+    : [
+        {
+          quote: `이번엔 「${testName}」구나.\n같이 차분하게 들여다보자.`,
+          cta: "응, 좋아",
+        },
+        {
+          quote: `${questionCount}문항, 약 ${durationMinutes}분이면 돼.\n정답은 없어. 지금 느끼는 그대로만\n말해주면 충분해.`,
+          cta: "좋아, 시작할게",
+        },
+      ];
 
   const finish = () => {
     setLeaving(true);
@@ -41,13 +60,13 @@ export default function IntIntroGate({ questionCount, durationMinutes, onComplet
     if (step < steps.length - 1) {
       setStep((s) => s + 1);
     } else {
-      void track("int_intro_completed", {});
+      void track("test_intro_completed", { is_integrated: isIntegrated });
       finish();
     }
   };
 
   const handleSkip = () => {
-    void track("int_intro_skipped", { step });
+    void track("test_intro_skipped", { step, is_integrated: isIntegrated });
     finish();
   };
 
@@ -77,7 +96,7 @@ export default function IntIntroGate({ questionCount, durationMinutes, onComplet
 
       <div className="relative z-10 flex flex-col items-center max-w-md w-full text-center animate-fade-in" key={step}>
         {/* 치토 일러 */}
-        <div className="w-44 h-44 md:w-52 md:h-52 rounded-[2rem] overflow-hidden mb-8 shadow-[0_0_60px_rgba(100,102,241,0.35)]">
+        <div className="w-44 h-44 md:w-52 md:h-52 rounded-[2rem] overflow-hidden mb-8 shadow-[0_0_60px_rgba(100,102,241,0.35)] animate-chito-float">
           <img src={CHITO_MAIN_URL} alt="치토" className="w-full h-full object-cover" loading="eager" />
         </div>
 
