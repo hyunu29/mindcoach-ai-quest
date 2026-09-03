@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Lock, Clock, UserCircle2, ArrowRight } from 'lucide-react';
+import { Lock, Clock, UserCircle2, ArrowRight, Gift } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePurchase } from '@/hooks/usePurchase';
 import { useSingleTestPrice, SINGLE_TEST_PRICE } from '@/hooks/useSingleTestPrice';
@@ -123,6 +123,19 @@ export function TestPaywall({ testSlug, testName, reason, expiresAt }: TestPaywa
                 로그인하기
               </Button>
             </>
+          )}
+          {reason !== 'not_logged_in' && (
+            <button
+              type="button"
+              onClick={() => {
+                void track('paywall_referral_clicked', { source: 'test_paywall', test_id: testSlug });
+                navigate('/profile');
+              }}
+              className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors px-4 py-3 text-sm font-semibold text-primary"
+            >
+              <Gift className="w-4 h-4" />
+              친구 초대하고 무료 검사권 받기
+            </button>
           )}
           <button
             type="button"

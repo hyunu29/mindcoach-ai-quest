@@ -418,7 +418,7 @@ export default function TestsPage() {
               </div>
               <p className="text-xs md:text-sm text-muted-foreground mt-1">{PRO_PLAN_DISPLAY.description}</p>
               <ul className="mt-3 space-y-1.5 text-xs md:text-sm text-muted-foreground">
-                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> 매월 200 AI 코칭 크레딧</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> 매월 50 AI 코칭 크레딧</li>
                 <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> 주 2회 단품 검사 무료 이용</li>
                 <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-primary" /> 감정 트래킹 리포트 확장</li>
               </ul>

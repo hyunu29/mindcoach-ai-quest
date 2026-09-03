@@ -8,9 +8,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Zap } from 'lucide-react';
+import { Crown, Zap, Gift } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { usePurchase } from '@/hooks/usePurchase';
 import { CREDIT_PACK_DISPLAY } from '@/lib/payments/catalog-display';
+import { track } from '@/lib/analytics';
 
 interface Props {
   open: boolean;
@@ -19,6 +21,7 @@ interface Props {
 
 export default function CreditUpsellModal({ open, onOpenChange }: Props) {
   const { purchase, isLoading } = usePurchase();
+  const navigate = useNavigate();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,6 +85,19 @@ export default function CreditUpsellModal({ open, onOpenChange }: Props) {
             ))}
           </div>
         </div>
+
+        {/* 무료 경로 — 친구 초대 (보상: 양쪽 검사권 1개 + AI 크레딧 5개) */}
+        <button
+          onClick={() => {
+            void track('paywall_referral_clicked', { source: 'credit_upsell' });
+            onOpenChange(false);
+            navigate('/profile');
+          }}
+          className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors px-4 py-3 text-sm font-semibold text-primary"
+        >
+          <Gift className="w-4 h-4" />
+          친구 초대하고 무료로 크레딧 5개 받기
+        </button>
       </DialogContent>
     </Dialog>
   );

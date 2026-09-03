@@ -140,9 +140,12 @@ export default function TestTakingPage() {
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
   }, []);
 
-  const progress = questions.length > 0 ? ((current + 1) / questions.length) * 100 : 0;
+  // 진행률은 "몇 번째 문항을 보고 있는가"가 아니라 "몇 개에 응답했는가" 기준 (100% 거짓 표시 방지)
+  const answeredCount = Object.keys(answers).length;
+  const progress = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
   const isLastQuestion = current === questions.length - 1;
-  const allAnswered = questions.length > 0 && Object.keys(answers).length === questions.length;
+  const allAnswered = questions.length > 0 && answeredCount === questions.length;
+  const firstUnanswered = questions.findIndex((_, i) => answers[i] === undefined);
 
   const currentQuestion = questions[current];
   const currentSubdomain = currentQuestion?.subdomain || "";
@@ -345,8 +348,8 @@ export default function TestTakingPage() {
             />
           </div>
           <div className="flex items-center justify-between text-[11px] text-white/35 mb-5">
-            <span>{current + 1} / {questions.length}</span>
-            <span>{Math.round(progress)}%</span>
+            <span>Q{current + 1} / {questions.length}</span>
+            <span>{answeredCount}개 응답 · {Math.round(progress)}%</span>
           </div>
 
           {/* 치토 마일스톤 응원 */}
@@ -387,6 +390,21 @@ export default function TestTakingPage() {
               })}
             </div>
           </div>
+
+          {/* 마지막 문항인데 미응답이 남아 있으면 — 사유 안내 + 해당 문항 점프 */}
+          {isLastQuestion && !allAnswered && firstUnanswered >= 0 && (
+            <div className="flex items-center justify-between gap-3 mt-6 rounded-xl bg-white/[0.06] border border-white/10 px-4 py-3 animate-pop-in">
+              <p className="text-xs text-white/60">
+                아직 {questions.length - answeredCount}개 문항이 비어 있어
+              </p>
+              <button
+                onClick={() => setCurrent(firstUnanswered)}
+                className="shrink-0 text-xs font-semibold text-[#C4B5FD] hover:text-white transition-colors"
+              >
+                Q{firstUnanswered + 1}번으로 가기 →
+              </button>
+            </div>
+          )}
 
           {/* 내비게이션 */}
           <div className="flex gap-3 mt-8 pb-2">

@@ -26,14 +26,7 @@ function getRiskBadge(level: string) {
   }
 }
 
-const EMOTION_COLORS: Record<string, string> = {
-  "😊": "hsl(160 84% 39%)",
-  "😌": "hsl(200 80% 55%)",
-  "😐": "hsl(220 9% 66%)",
-  "😢": "hsl(239 84% 67%)",
-  "😤": "hsl(38 92% 50%)",
-  "😰": "hsl(0 84% 60%)",
-};
+import { EMOTION_COLORS_BY_EMOJI } from "@/lib/emotion-colors";
 
 const EMOTION_LABELS: Record<string, string> = {
   "😊": "좋아요",
@@ -120,7 +113,7 @@ export default function HistoryPage() {
     return Object.entries(counts).map(([emoji, value]) => ({
       name: `${emoji} ${EMOTION_LABELS[emoji] || ""}`,
       value,
-      color: EMOTION_COLORS[emoji] || "hsl(220 9% 66%)",
+      color: EMOTION_COLORS_BY_EMOJI[emoji] || "#9CA3AF",
     }));
   }, [emotions]);
 

@@ -19,7 +19,7 @@ interface EmotionHistoryProps {
   refreshKey: number;
 }
 
-const PIE_COLORS = ['#22c55e', '#60a5fa', '#a3a3a3', '#a78bfa', '#f472b6', '#c084fc'];
+import { getEmotionColor } from '@/lib/emotion-colors';
 
 export default function EmotionHistory({ userId, refreshKey }: EmotionHistoryProps) {
   const navigate = useNavigate();
@@ -81,9 +81,9 @@ export default function EmotionHistory({ userId, refreshKey }: EmotionHistoryPro
     return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
   }, []);
 
-  // Weekly data (last 7 days)
+  // Weekly data (last 7 days) — 기록 없는 날은 null (기본값으로 채우면 없는 감정 서사가 생긴다)
   const weeklyData = useMemo(() => {
-    const result: { day: string; score: number; emoji: string }[] = [];
+    const result: { day: string; score: number | null; emoji: string }[] = [];
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -92,12 +92,17 @@ export default function EmotionHistory({ userId, refreshKey }: EmotionHistoryPro
       const record = recordsByDate[key];
       result.push({
         day: dayNames[d.getDay()],
-        score: record?.emotion_score ?? 3,
+        score: record?.emotion_score ?? null,
         emoji: record ? (emotionEmojiMap[record.primary_emotion as PrimaryEmotion] || '😐') : '',
       });
     }
     return result;
   }, [recordsByDate]);
+
+  const weeklyRecordedCount = useMemo(
+    () => weeklyData.filter((d) => d.score !== null).length,
+    [weeklyData],
+  );
 
   // Weekly emotion distribution for pie chart
   const weeklyDistribution = useMemo(() => {
@@ -236,22 +241,32 @@ export default function EmotionHistory({ userId, refreshKey }: EmotionHistoryPro
         <h3 className="font-bold mb-1">주간 리포트</h3>
         <p className="text-xs text-muted-foreground mb-3">지난 7일간의 감정 변화</p>
 
-        <div className="h-36 mb-3">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={weeklyData}>
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-              <YAxis hide domain={[0, 6]} />
-              <Tooltip
-                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                formatter={(value: number) => {
-                  const opt = emotionOptions.find(e => e.score === value);
-                  return [opt ? `${opt.emoji} ${opt.label}` : value, '감정'];
-                }}
-              />
-              <Line type="monotone" dataKey="score" stroke="hsl(239, 84%, 67%)" strokeWidth={2.5} dot={{ r: 4, fill: 'hsl(239, 84%, 67%)' }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {weeklyRecordedCount >= 2 ? (
+          <div className="h-36 mb-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklyData}>
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+                <YAxis hide domain={[0, 6]} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                  formatter={(value: number) => {
+                    const opt = emotionOptions.find(e => e.score === value);
+                    return [opt ? `${opt.emoji} ${opt.label}` : value, '감정'];
+                  }}
+                />
+                <Line type="monotone" dataKey="score" stroke="hsl(239, 84%, 67%)" strokeWidth={2.5} dot={{ r: 4, fill: 'hsl(239, 84%, 67%)' }} activeDot={{ r: 6 }} connectNulls={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="bg-muted/50 rounded-xl p-4 mb-3 text-center">
+            <p className="text-sm text-muted-foreground">
+              {weeklyRecordedCount === 0
+                ? '아직 이번 주 기록이 없어. 오늘부터 시작해볼까?'
+                : '3일만 기록하면 흐름이 보이기 시작해. 조금씩 쌓아가자!'}
+            </p>
+          </div>
+        )}
 
         {/* Pie chart */}
         {weeklyDistribution.length > 0 && (
@@ -259,8 +274,8 @@ export default function EmotionHistory({ userId, refreshKey }: EmotionHistoryPro
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={weeklyDistribution} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={3} dataKey="value" label={({ name }) => name}>
-                  {weeklyDistribution.map((_, idx) => (
-                    <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                  {weeklyDistribution.map((entry) => (
+                    <Cell key={entry.key} fill={getEmotionColor(entry.key)} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -269,24 +284,37 @@ export default function EmotionHistory({ userId, refreshKey }: EmotionHistoryPro
           </div>
         )}
 
-        <div className="bg-muted/50 rounded-xl p-3 mb-3">
-          <p className="text-sm font-medium">
-            이번 주 가장 많은 감정: {weeklyInsight.emoji}{' '}
-            <span className="text-muted-foreground">{weeklyInsight.label} ({weeklyInsight.count}회)</span>
-          </p>
-        </div>
+        {/* 인사이트는 최소 3건부터 — n=1로 단정하지 않는다 */}
+        {weeklyRecordedCount >= 3 ? (
+          <>
+            <div className="bg-muted/50 rounded-xl p-3 mb-3">
+              <p className="text-sm font-medium">
+                이번 주 가장 많은 감정: {weeklyInsight.emoji}{' '}
+                <span className="text-muted-foreground">{weeklyInsight.label} ({weeklyInsight.count}회)</span>
+              </p>
+            </div>
 
-        <div className="bg-secondary/5 border border-secondary/15 rounded-xl p-3">
-          <div className="flex items-start gap-2">
-            <Badge className="gradient-primary text-primary-foreground text-[10px] px-2 py-0.5 border-0 shrink-0 mt-0.5">AI 인사이트</Badge>
-            <p className="text-xs text-muted-foreground leading-relaxed">{getInsightText()}</p>
-          </div>
-          {(weeklyInsight.key === 'anxious' || weeklyInsight.key === 'sad') && (
-            <Button variant="ghost" size="sm" className="mt-2 text-primary text-xs" onClick={() => navigate('/coaching')}>
-              <MessageCircle className="w-3.5 h-3.5 mr-1" /> AI 코칭 시작하기
-            </Button>
-          )}
-        </div>
+            <div className="bg-secondary/5 border border-secondary/15 rounded-xl p-3">
+              <div className="flex items-start gap-2">
+                <Badge className="gradient-primary text-primary-foreground text-[10px] px-2 py-0.5 border-0 shrink-0 mt-0.5">AI 인사이트</Badge>
+                <p className="text-xs text-muted-foreground leading-relaxed">{getInsightText()}</p>
+              </div>
+              {(weeklyInsight.key === 'anxious' || weeklyInsight.key === 'sad') && (
+                <Button variant="ghost" size="sm" className="mt-2 text-primary text-xs" onClick={() => navigate('/coaching')}>
+                  <MessageCircle className="w-3.5 h-3.5 mr-1" /> AI 코칭 시작하기
+                </Button>
+              )}
+            </div>
+          </>
+        ) : (
+          weeklyRecordedCount > 0 && (
+            <div className="bg-muted/50 rounded-xl p-3">
+              <p className="text-xs text-muted-foreground">
+                {3 - weeklyRecordedCount}일만 더 기록하면 치토가 이번 주 흐름을 읽어줄게.
+              </p>
+            </div>
+          )
+        )}
       </Card>
     </div>
   );

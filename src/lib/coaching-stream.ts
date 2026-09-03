@@ -14,6 +14,7 @@ interface StreamChatParams {
   } | null;
   testResultSummary?: string | null;
   emotionSummary?: string | null;
+  nickname?: string | null;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -24,6 +25,7 @@ export async function streamCoachingChat({
   syndromeContext,
   testResultSummary,
   emotionSummary,
+  nickname,
   onDelta,
   onDone,
   onError,
@@ -51,6 +53,7 @@ export async function streamCoachingChat({
       syndrome_context: syndromeContext || null,
       test_result_summary: testResultSummary || null,
       emotion_summary: emotionSummary || null,
+      nickname: nickname || null,
     }),
   });
 

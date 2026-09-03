@@ -37,6 +37,9 @@ export default function CoachingPage() {
 
   const [testResultSummaryCtx, setTestResultSummaryCtx] = useState<string | null>(null);
   const [emotionSummaryCtx, setEmotionSummaryCtx] = useState<string | null>(null);
+  const [nickname, setNickname] = useState<string | null>(null);
+  // 위기 신호 감지 후 N턴 동안 안전 확인을 프롬프트에 유지 (1회성 안내로 끝나지 않게)
+  const crisisFollowUpRef = useRef(0);
 
   // Track whether emotion was already saved in this session
   const [emotionSavedInSession, setEmotionSavedInSession] = useState<Record<string, boolean>>({});
@@ -75,6 +78,13 @@ export default function CoachingPage() {
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
       await refreshCredits(user.id);
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("nickname")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile?.nickname) setNickname(profile.nickname);
 
       const { data: testResults } = await supabase
         .from("test_results")
@@ -181,7 +191,7 @@ export default function CoachingPage() {
           setUpsellOpen(true);
           return;
         }
-        const fallbackMsg: ChatMessage = { role: "ai", content: "안녕하세요! 치토예요. 😊 어떤 이야기든 편하게 말씀해 주세요.", timestamp: new Date().toISOString() };
+        const fallbackMsg: ChatMessage = { role: "ai", content: "안녕! 나 치토야. 😊 어떤 이야기든 편하게 들려줘.", timestamp: new Date().toISOString() };
         setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [fallbackMsg] } : s));
         // 로컬에만 두면 새로고침 후 빈 세션이 남으므로 DB에도 반영
         await supabase.from("coaching_sessions").update({ messages: [fallbackMsg] as any, updated_at: new Date().toISOString() }).eq("id", sessionId);
@@ -238,8 +248,13 @@ export default function CoachingPage() {
     const syndromeCtx = getSyndromeContext(active.related_syndrome);
     let combinedTestSummary = testResultSummaryCtx;
     if (crisis) {
-      const crisisNote = `⚠️ 위험 신호 감지: ${crisis.type} (심각도: ${crisis.severity}). 사용자의 안전을 최우선으로 응답해주세요.`;
+      crisisFollowUpRef.current = 2;
+      const crisisNote = `⚠️ 위험 신호 감지: ${crisis.type} (심각도: ${crisis.severity}). 사용자의 안전을 최우선으로, 차분한 어조로 응답해주세요.`;
       combinedTestSummary = combinedTestSummary ? `${crisisNote}\n\n${combinedTestSummary}` : crisisNote;
+    } else if (crisisFollowUpRef.current > 0) {
+      crisisFollowUpRef.current -= 1;
+      const followUpNote = `⚠️ 직전 대화에서 위험 신호가 감지되었습니다. 사용자가 다른 주제를 이야기하더라도, 이번 응답에서 자연스럽게 안부와 안전을 확인해주세요 (예: "아까 얘기 계속 마음에 걸려. 지금은 좀 어때?").`;
+      combinedTestSummary = combinedTestSummary ? `${followUpNote}\n\n${combinedTestSummary}` : followUpNote;
     }
 
     const currentSessionId = activeId;
@@ -249,6 +264,7 @@ export default function CoachingPage() {
       syndromeContext: syndromeCtx,
       testResultSummary: combinedTestSummary,
       emotionSummary: emotionSummaryCtx,
+      nickname,
       onDelta: (chunk) => {
         aiContent += chunk;
         const aiMsg: ChatMessage = { role: "ai", content: aiContent, timestamp: new Date().toISOString() };
@@ -438,7 +454,10 @@ export default function CoachingPage() {
                 <p className="text-xs mb-3" style={{ color: "#991B1B" }}>지금 바로 도움을 받을 수 있습니다.</p>
                 <div className="flex gap-2 flex-wrap">
                   <a href="tel:1393" className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg active:scale-95" style={{ backgroundColor: "#EF4444", color: "white" }}>
-                    <Phone className="w-3.5 h-3.5" /> 📞 자살예방상담전화 1393
+                    <Phone className="w-3.5 h-3.5" /> 자살예방상담 1393
+                  </a>
+                  <a href="tel:1388" className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border active:scale-95" style={{ borderColor: "#EF4444", color: "#DC2626", backgroundColor: "white" }}>
+                    <Phone className="w-3.5 h-3.5" /> 청소년전화 1388
                   </a>
                   <button onClick={() => setCounselorModalOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border active:scale-95" style={{ borderColor: "#EF4444", color: "#DC2626", backgroundColor: "white" }}>
                     <MessageCircleHeart className="w-3.5 h-3.5" /> 💬 전문가 상담 연결
@@ -571,9 +590,15 @@ export default function CoachingPage() {
               <a href="tel:1393" className="flex items-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-semibold text-white active:scale-[0.98]" style={{ backgroundColor: "#EF4444" }}>
                 <Phone className="w-4 h-4" /> 자살예방상담전화 1393 (24시간)
               </a>
+              <a href="tel:1388" className="flex items-center gap-2 w-full px-4 py-3 rounded-xl border text-sm font-semibold active:scale-[0.98]" style={{ borderColor: "#EF4444", color: "#DC2626" }}>
+                <Phone className="w-4 h-4" /> 청소년전화 1388 (24시간)
+              </a>
               <a href="tel:1577-0199" className="flex items-center gap-2 w-full px-4 py-3 rounded-xl border text-sm font-semibold active:scale-[0.98]" style={{ borderColor: "#EF4444", color: "#DC2626" }}>
                 <Phone className="w-4 h-4" /> 정신건강위기상담 1577-0199
               </a>
+              <p className="text-[11px] text-muted-foreground pt-1">
+                학교 Wee클래스·청소년상담복지센터에서도 대면 상담을 받을 수 있어요.
+              </p>
             </div>
           </div>
         </DialogContent>

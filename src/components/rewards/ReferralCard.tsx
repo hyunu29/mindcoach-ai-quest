@@ -66,7 +66,8 @@ export default function ReferralCard() {
         친구가 가입해 내 코드를 등록하고 <strong className="text-foreground">통합 심리검사를 완료</strong>하면{' '}
         <strong className="text-foreground">두 사람 모두</strong> 유료검사 이용권{' '}
         <strong className="text-foreground">1개</strong> + AI 크레딧{' '}
-        <strong className="text-foreground">5개</strong>를 받아요.
+        <strong className="text-foreground">5개</strong>를 받아요.{' '}
+        <span className="text-primary font-semibold">(약 ₩7,300 상당)</span>
       </p>
       <div className="flex items-center gap-2">
         <div className="flex-1 px-3 py-2.5 rounded-xl bg-background border border-border font-mono text-sm font-semibold tracking-wider text-center">

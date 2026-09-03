@@ -25,6 +25,8 @@ import {
 } from "@/lib/character/recommend";
 import { CHITO_EMBLEM_URL } from "@/lib/character/chito";
 import ShareResultCard from "@/components/results/ShareResultCard";
+import { useSingleTestPrice } from "@/hooks/useSingleTestPrice";
+import { isFreeTest } from "@/lib/payments/free-tests";
 
 function getBarColor(score: number, max: number) {
   const pct = (score / max) * 100;
@@ -78,6 +80,7 @@ export default function ResultsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as any;
+  const { price: singleTestPrice } = useSingleTestPrice();
 
   const [result, setResult] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -458,9 +461,9 @@ export default function ResultsPage() {
       {/* Recommended follow-up tests (Integrated only) */}
       {isIntegrated && recommendations.length > 0 && (
         <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
-          <h2 className="font-bold mb-1">추천 필수 간이 검사</h2>
+          <h2 className="font-bold mb-1">가장 먼저 확인하면 좋은 검사</h2>
           <p className="text-xs text-muted-foreground mb-4">
-            고득점 영역에 맞는 간이 심리검사를 추천드려요.
+            점수가 높게 나온 영역부터 차분히 확인해보세요. 서두르지 않아도 괜찮아요.
           </p>
           <div className="space-y-4">
             {recommendations.map((rec) => (
@@ -489,8 +492,13 @@ export default function ResultsPage() {
                       <span className="text-sm font-medium truncate">
                         {testNameById[tid] || tid}
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-primary font-semibold shrink-0">
-                        검사하기 <ChevronRight className="w-3.5 h-3.5" />
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] text-muted-foreground font-medium">
+                          {isFreeTest(tid) ? "무료" : `₩${singleTestPrice.toLocaleString()}`}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-primary font-semibold">
+                          검사하기 <ChevronRight className="w-3.5 h-3.5" />
+                        </span>
                       </span>
                     </button>
                   ))}
