@@ -31,7 +31,7 @@ export function CharacterAvatar({ emotion, size, className }: Props) {
   return (
     <img
       src={src}
-      alt={`${CHITO.name}${emotion ? ` - ${emotion}` : ''}`}
+      alt={CHITO.name}
       onError={() => setErrored(true)}
       className={`object-cover ${FRAME_CLASS[size]} ${SIZE_CLASS[size]} ${
         size === 'hero' ? 'animate-chito-float' : ''

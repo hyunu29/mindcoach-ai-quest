@@ -45,9 +45,9 @@ export default function EmotionPage() {
 
   useEffect(() => { if (userId) checkTodayRecord(); }, [userId, checkTodayRecord, refreshKey]);
 
+  // 자동 저장 후에도 요약 카드를 계속 볼 수 있도록 탭은 전환하지 않는다
   const handleRecordSaved = () => {
     setRefreshKey(k => k + 1);
-    setActiveTab("history");
   };
 
   if (loading) {
@@ -82,8 +82,9 @@ export default function EmotionPage() {
           <TabsTrigger value="history" className="rounded-lg">기록 & 리포트</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="record" className="min-h-[60vh]">
-          <Card className="rounded-2xl border-border/50 shadow-sm overflow-hidden" style={{ minHeight: '60vh' }}>
+        <TabsContent value="record">
+          {/* 고정 높이 — 대화가 길어져도 페이지가 늘어나지 않고 내부 스크롤 + 입력창 하단 고정 */}
+          <Card className="rounded-2xl border-border/50 shadow-sm overflow-hidden h-[calc(100dvh-240px)] min-h-[480px]">
             <EmotionAgentChat
               userId={userId}
               onRecordSaved={handleRecordSaved}

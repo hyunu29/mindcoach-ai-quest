@@ -44,6 +44,7 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
   const [bodyReactions, setBodyReactions] = useState<string[]>([]);
   const [journalData, setJournalData] = useState<EmotionJournalData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editSituation, setEditSituation] = useState("");
@@ -75,6 +76,7 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
     setSituation("");
     setBodyReactions([]);
     setJournalData(null);
+    setSavedRecordId(null);
     setIsEditing(false);
 
     addMessage({
@@ -155,76 +157,22 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
     scrollToBottom();
   }, [selectedEmotion, addMessage, addAgentDelayed, scrollToBottom]);
 
-  // Generate summary card
-  const generateSummary = useCallback((bodyRxns: string[]) => {
-    const now = new Date();
-    const opt = emotionOptions.find(e => e.key === selectedEmotion);
-    const comment = pickRandom(aiComments[selectedEmotion!]);
-
-    const journal: EmotionJournalData = {
-      date: now.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-      time: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-      primaryEmotion: selectedEmotion!,
-      primaryEmotionLabel: opt?.label || '',
-      secondaryEmotions: selectedSecondary,
-      situation,
-      bodyReactions: bodyRxns,
-      aiComment: comment,
-      emotionScore: opt?.score || 3,
-    };
-    setJournalData(journal);
-    setStep('summary');
-
-    setTimeout(() => {
-      addMessage({
-        role: 'agent',
-        content: "오늘 이렇게 마음을 들여다본 것만으로도 대단한 거야. 오늘의 기록을 정리해봤어!",
-        isJournalCard: true,
-        journalData: journal,
-      });
-      scrollToBottom();
-    }, 600);
-  }, [selectedEmotion, selectedSecondary, situation, addMessage, scrollToBottom]);
-
-  // Handle body reaction chips
-  const handleBodySelect = useCallback((keys: string[]) => {
-    const labels = keys.filter(k => k !== 'none').map(k => {
-      const found = bodyReactionOptions.find(b => b.key === k);
-      return found?.label || k;
-    });
-    setBodyReactions(labels);
-    if (keys.includes('none')) {
-      addMessage({ role: 'user', content: '없었어요' });
-    } else {
-      addMessage({ role: 'user', content: labels.join(', ') });
-    }
-    generateSummary(labels);
-    scrollToBottom();
-  }, [addMessage, scrollToBottom, generateSummary]);
-
-  // Skip body reaction
-  const handleSkipBody = useCallback(() => {
-    addMessage({ role: 'user', content: '넘어갈게!' });
-    generateSummary([]);
-    scrollToBottom();
-  }, [addMessage, scrollToBottom, generateSummary]);
-
-  // Save to DB
-  const handleSave = useCallback(async () => {
-    if (!journalData || saving) return;
+  // 대화 종료 시 자동 저장 — "저장 결심" 단계를 없앤다 (수동 저장 버튼 제거)
+  const saveRecord = useCallback(async (journal: EmotionJournalData) => {
+    if (saving) return;
     setSaving(true);
     try {
       // Save emotion_records
-      const { error } = await supabase.from('emotion_records').insert({
+      const { data: inserted, error } = await supabase.from('emotion_records').insert({
         user_id: userId,
-        primary_emotion: journalData.primaryEmotion,
-        secondary_emotions: journalData.secondaryEmotions,
-        emotion_score: journalData.emotionScore,
-        situation: journalData.situation,
-        body_reaction: journalData.bodyReactions,
-        ai_comment: journalData.aiComment,
+        primary_emotion: journal.primaryEmotion,
+        secondary_emotions: journal.secondaryEmotions,
+        emotion_score: journal.emotionScore,
+        situation: journal.situation,
+        body_reaction: journal.bodyReactions,
+        ai_comment: journal.aiComment,
         conversation_log: messages.map(m => ({ role: m.role, content: m.content })),
-      });
+      }).select('id').single();
       if (error) throw error;
 
       // Update streak
@@ -263,16 +211,71 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
         });
       }
 
-      setStep('saved');
-      toast({ title: "기록 완료! 🎉", description: "오늘의 감정이 저장되었어요." });
+      setSavedRecordId(inserted?.id ?? null);
+      toast({ title: "기록 완료! 🎉", description: "오늘의 감정을 자동으로 저장했어요." });
       onRecordSaved();
     } catch (err) {
       console.error(err);
-      toast({ title: "저장 실패", description: "다시 시도해주세요.", variant: "destructive" });
+      toast({ title: "저장 실패", description: "네트워크를 확인하고 다시 시도해주세요.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
-  }, [journalData, saving, userId, messages, onRecordSaved]);
+  }, [saving, userId, messages, onRecordSaved]);
+
+  // Generate summary card
+  const generateSummary = useCallback((bodyRxns: string[]) => {
+    const now = new Date();
+    const opt = emotionOptions.find(e => e.key === selectedEmotion);
+    const comment = pickRandom(aiComments[selectedEmotion!]);
+
+    const journal: EmotionJournalData = {
+      date: now.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+      time: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+      primaryEmotion: selectedEmotion!,
+      primaryEmotionLabel: opt?.label || '',
+      secondaryEmotions: selectedSecondary,
+      situation,
+      bodyReactions: bodyRxns,
+      aiComment: comment,
+      emotionScore: opt?.score || 3,
+    };
+    setJournalData(journal);
+    setStep('summary');
+
+    setTimeout(() => {
+      addMessage({
+        role: 'agent',
+        content: "오늘 이렇게 마음을 들여다본 것만으로도 대단한 거야. 오늘의 기록을 정리해서 저장해뒀어!",
+        isJournalCard: true,
+        journalData: journal,
+      });
+      scrollToBottom();
+      void saveRecord(journal);
+    }, 600);
+  }, [selectedEmotion, selectedSecondary, situation, addMessage, scrollToBottom, saveRecord]);
+
+  // Handle body reaction chips
+  const handleBodySelect = useCallback((keys: string[]) => {
+    const labels = keys.filter(k => k !== 'none').map(k => {
+      const found = bodyReactionOptions.find(b => b.key === k);
+      return found?.label || k;
+    });
+    setBodyReactions(labels);
+    if (keys.includes('none')) {
+      addMessage({ role: 'user', content: '없었어' });
+    } else {
+      addMessage({ role: 'user', content: labels.join(', ') });
+    }
+    generateSummary(labels);
+    scrollToBottom();
+  }, [addMessage, scrollToBottom, generateSummary]);
+
+  // Skip body reaction
+  const handleSkipBody = useCallback(() => {
+    addMessage({ role: 'user', content: '넘어갈게!' });
+    generateSummary([]);
+    scrollToBottom();
+  }, [addMessage, scrollToBottom, generateSummary]);
 
   // Crisis banner
   const CrisisBanner = () => (
@@ -439,6 +442,17 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
                 <Button size="sm" variant="outline" className="text-xs rounded-lg" onClick={() => {
                   setSituation(editSituation);
                   setJournalData(prev => prev ? { ...prev, situation: editSituation } : prev);
+                  setMessages(prev => prev.map(m =>
+                    m.isJournalCard && m.journalData
+                      ? { ...m, journalData: { ...m.journalData, situation: editSituation } }
+                      : m
+                  ));
+                  // 자동 저장된 레코드에도 반영
+                  if (savedRecordId) {
+                    void supabase.from('emotion_records')
+                      .update({ situation: editSituation })
+                      .eq('id', savedRecordId);
+                  }
                   setIsEditing(false);
                 }}>확인</Button>
               </div>
@@ -455,35 +469,43 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
         </div>
 
         {step === 'summary' && (
-          <div className="flex gap-2 mt-3">
-            <Button
-              size="sm"
-              variant="hero"
-              className="rounded-xl flex-1"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? '저장 중...' : <><Check className="w-3.5 h-3.5 mr-1" /> 저장하기</>}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => {
-                setIsEditing(true);
-                setEditSituation(journal.situation);
-              }}
-            >
-              <Pencil className="w-3.5 h-3.5 mr-1" /> 수정
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="rounded-xl text-primary"
-              onClick={() => navigate('/coaching')}
-            >
-              <MessageCircle className="w-3.5 h-3.5 mr-1" /> 코칭
-            </Button>
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-accent">
+              {saving ? (
+                <span className="text-muted-foreground">저장 중...</span>
+              ) : savedRecordId ? (
+                <><Check className="w-3.5 h-3.5" /> 자동으로 저장됐어요</>
+              ) : null}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl flex-1"
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditSituation(journal.situation);
+                }}
+              >
+                <Pencil className="w-3.5 h-3.5 mr-1" /> 수정
+              </Button>
+              <Button
+                size="sm"
+                variant="hero"
+                className="rounded-xl flex-1"
+                onClick={() => navigate('/coaching')}
+              >
+                <MessageCircle className="w-3.5 h-3.5 mr-1" /> 치토랑 더 얘기하기
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="rounded-xl text-muted-foreground"
+                onClick={() => setStep('idle')}
+              >
+                끝내기
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -508,13 +530,23 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
           </div>
           <p className="text-sm text-muted-foreground text-center">치토가 오늘의 감정을 기록할 수 있도록 도와줄게요</p>
 
+          {/* 오늘 기록 요약 — "처음인 척" 방지 */}
+          {todayRecord && (
+            <div className="w-full max-w-xs rounded-2xl bg-muted/50 border border-border/50 p-4 text-center animate-pop-in">
+              <p className="text-xs text-muted-foreground mb-1">✅ 오늘의 기록</p>
+              <p className="text-sm font-semibold">
+                {emotionOptions.find(e => e.key === todayRecord.primary_emotion)?.emoji}{' '}
+                {emotionOptions.find(e => e.key === todayRecord.primary_emotion)?.label ?? ''}
+              </p>
+              {todayRecord.situation && (
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">"{todayRecord.situation}"</p>
+              )}
+            </div>
+          )}
+
           <Button variant="hero" size="lg" className="rounded-xl w-full max-w-xs" onClick={startConversation}>
             {todayRecord ? "한 번 더 기록하기" : "감정 기록 시작하기"}
           </Button>
-
-          {todayRecord && (
-            <p className="text-xs text-muted-foreground">✅ 오늘 이미 기록이 있어요</p>
-          )}
         </div>
       )}
 
@@ -556,19 +588,6 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
               </div>
             ))}
 
-            {/* Saved state */}
-            {step === 'saved' && (
-              <div className="text-center py-4 space-y-3 animate-fade-in">
-                <div className="w-16 h-16 mx-auto rounded-full bg-accent/20 flex items-center justify-center">
-                  <Check className="w-8 h-8 text-accent" />
-                </div>
-                <p className="font-semibold">기록 완료!</p>
-                <p className="text-xs text-muted-foreground">감정 패턴이 궁금하다면 아래 주간 리포트를 확인해보세요</p>
-                <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setStep('idle')}>
-                  돌아가기
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* Input area */}

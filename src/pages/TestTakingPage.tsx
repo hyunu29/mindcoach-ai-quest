@@ -54,8 +54,8 @@ export default function TestTakingPage() {
   const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [timeLeft, setTimeLeft] = useState(180);
-  const [timerExpired, setTimerExpired] = useState(false);
+  // 카운트다운 아님 — 시험불안 타깃에게 줄어드는 시계는 자극이므로 경과 시간만 표시
+  const [elapsed, setElapsed] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const startTimeRef = useRef(Date.now());
@@ -77,7 +77,6 @@ export default function TestTakingPage() {
           subdomains: (data.subdomains as string[]) || [],
           questions: (data.questions as unknown as QuestionItem[]) || [],
         });
-        setTimeLeft((data.duration_minutes || 3) * 60);
         if (!data.is_coming_soon && !sessionStorage.getItem(`test-intro-seen:${data.id}`)) {
           setShowIntro(true);
         }
@@ -95,20 +94,12 @@ export default function TestTakingPage() {
     void track('test_started', { test_id: test.id, test_name: test.name, is_free: isFreeTest(test.id) });
   }, [test]);
 
-  // Timer (몰입 인트로가 떠 있는 동안은 흐르지 않음)
+  // 경과 시간 (몰입 인트로가 떠 있는 동안은 흐르지 않음)
   useEffect(() => {
-    if (timerExpired || loading || !test || test.is_coming_soon || showIntro) return;
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setTimerExpired(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    if (loading || !test || test.is_coming_soon || showIntro || submitting) return;
+    const interval = setInterval(() => setElapsed((prev) => prev + 1), 1000);
     return () => clearInterval(interval);
-  }, [timerExpired, loading, test, showIntro]);
+  }, [loading, test, showIntro, submitting]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -332,11 +323,9 @@ export default function TestTakingPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-sm font-semibold text-white/70 truncate px-3">{test.name}</h1>
-            <div className={`flex items-center gap-1 text-xs font-mono font-semibold shrink-0 ${
-              timerExpired || timeLeft <= 30 ? "text-red-400" : "text-white/40"
-            }`}>
+            <div className="flex items-center gap-1 text-xs font-mono font-semibold shrink-0 text-white/40">
               <Clock className="w-3.5 h-3.5" />
-              {timerExpired ? "시간 초과" : formatTime(timeLeft)}
+              {formatTime(elapsed)}
             </div>
           </div>
 
@@ -369,22 +358,22 @@ export default function TestTakingPage() {
               Q{current + 1}. {currentQuestion.text}
             </p>
 
-            {/* Likert scale */}
-            <div className="flex gap-2">
+            {/* Likert scale — 모바일은 세로 리스트 (5칸 가로 압축 시 라벨 깨짐 방지) */}
+            <div className="flex flex-col sm:flex-row gap-2">
               {likertOptions.map((opt) => {
                 const isSelected = answers[current] === opt.score;
                 return (
                   <button
                     key={opt.score}
                     onClick={() => handleSelect(opt.score)}
-                    className={`flex-1 flex flex-col items-center gap-1.5 py-3.5 px-1 rounded-xl border text-xs transition-all duration-200 active:scale-95 ${
+                    className={`flex-1 flex flex-row sm:flex-col items-center justify-start sm:justify-center gap-3 sm:gap-1.5 min-h-12 sm:min-h-0 py-3 sm:py-3.5 px-4 sm:px-1 rounded-xl border text-xs transition-all duration-200 active:scale-95 ${
                       isSelected
-                        ? "bg-gradient-to-b from-[#E4E5FF] to-white text-[#2A2D8F] border-transparent shadow-[0_0_20px_rgba(164,166,255,0.35)] scale-[1.03]"
+                        ? "bg-gradient-to-b from-[#E4E5FF] to-white text-[#2A2D8F] border-transparent shadow-[0_0_20px_rgba(164,166,255,0.35)] sm:scale-[1.03]"
                         : "bg-white/[0.06] border-white/10 text-white/55 hover:bg-white/10 hover:border-white/20"
                     }`}
                   >
-                    <span className="text-lg font-bold">{opt.score}</span>
-                    <span className="leading-tight text-center text-[10px] md:text-xs">{opt.label}</span>
+                    <span className="text-base sm:text-lg font-bold w-5 sm:w-auto text-center">{opt.score}</span>
+                    <span className="leading-tight text-left sm:text-center text-xs sm:text-[10px] md:text-xs">{opt.label}</span>
                   </button>
                 );
               })}

@@ -113,7 +113,7 @@ export const bodyReactionOptions: BodyReactionOption[] = [
   { key: 'shoulder_stiff', label: '어깨 뻣뻣' },
   { key: 'nausea', label: '속이 울렁' },
   { key: 'hand_shaking', label: '손 떨림' },
-  { key: 'none', label: '없었어요' },
+  { key: 'none', label: '없었어' },
 ];
 
 export const emotionEmojiMap: Record<PrimaryEmotion, string> = {
