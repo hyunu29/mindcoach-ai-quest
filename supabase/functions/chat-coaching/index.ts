@@ -96,9 +96,19 @@ serve(async (req) => {
 
     const { messages, syndrome_context, test_result_summary, emotion_summary, nickname } = await req.json();
 
+    // 닉네임은 서버에서 직접 조회 — 클라이언트 번들 버전/캐시와 무관하게 항상 주입
+    let userNickname: string | null =
+      typeof nickname === "string" && nickname.trim() ? nickname.trim() : null;
+    const { data: profileRow } = await admin
+      .from("profiles")
+      .select("nickname")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profileRow?.nickname) userNickname = profileRow.nickname;
+
     let contextMessage = "";
-    if (typeof nickname === "string" && nickname.trim()) {
-      contextMessage += `\n\n## 사용자 정보\n닉네임: ${nickname.trim().slice(0, 20)} — 이 닉네임으로 부르세요.\n`;
+    if (userNickname) {
+      contextMessage += `\n\n## 사용자 정보\n닉네임: ${userNickname.slice(0, 20)} — 이 닉네임으로 부르세요.\n`;
     }
     if (syndrome_context) {
       contextMessage += `\n\n## 현재 사용자의 관련 증후군 정보\n`;
