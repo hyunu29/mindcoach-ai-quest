@@ -4,9 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   ClipboardCheck, ChevronRight, Clock, Sparkles,
-  Gift, Check, Crown, Loader2, Target,
+  Gift, Check, Crown, Loader2, Target, Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SINGLE_TEST_DISPLAY, PRO_PLAN_DISPLAY } from "@/lib/payments/catalog-display";
@@ -39,12 +40,22 @@ interface TestRow {
 const CATEGORY_FILTERS = [
   { id: "all", label: "전체" },
   { id: "free", label: "🎁 무료" },
-  { id: "A", label: "A: 비교·SNS" },
-  { id: "B", label: "B: 번아웃·분노" },
-  { id: "C", label: "C: 긴장·수면" },
-  { id: "D", label: "D: 효능감·미루기" },
-  { id: "E", label: "E: 시험·집중력" },
+  { id: "A", label: "📱 비교·SNS" },
+  { id: "B", label: "🔥 번아웃·분노" },
+  { id: "C", label: "🌙 긴장·수면" },
+  { id: "D", label: "⏳ 효능감·미루기" },
+  { id: "E", label: "🎯 시험·집중력" },
 ];
+
+/* 카테고리별 색·이모지 코딩 — 31개 동일 아이콘 문제 해소 (점검 리포트 Q6) */
+const CATEGORY_META: Record<string, { emoji: string; tile: string; badge: string }> = {
+  A: { emoji: "📱", tile: "bg-sky-100", badge: "bg-sky-100 text-sky-700" },
+  B: { emoji: "🔥", tile: "bg-orange-100", badge: "bg-orange-100 text-orange-700" },
+  C: { emoji: "🌙", tile: "bg-indigo-100", badge: "bg-indigo-100 text-indigo-700" },
+  D: { emoji: "⏳", tile: "bg-amber-100", badge: "bg-amber-100 text-amber-700" },
+  E: { emoji: "🎯", tile: "bg-emerald-100", badge: "bg-emerald-100 text-emerald-700" },
+};
+const DEFAULT_META = { emoji: "📋", tile: "bg-primary/10", badge: "bg-muted text-muted-foreground" };
 
 type CardState =
   | { kind: "integrated"; test: TestRow }
@@ -188,15 +199,16 @@ function TestCard({
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-3">
-        <Badge variant="outline" className="text-[10px] font-medium shrink-0">
-          {test.category}
+        <Badge className={`text-[10px] font-medium shrink-0 border-0 ${(CATEGORY_META[test.category] ?? DEFAULT_META).badge}`}>
+          {(CATEGORY_META[test.category] ?? DEFAULT_META).emoji}{" "}
+          {CATEGORY_FILTERS.find((c) => c.id === test.category)?.label.replace(/^\S+\s/, "") ?? test.category}
         </Badge>
         {rightBadge}
       </div>
 
       <div className="flex items-start gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <ClipboardCheck className="w-5 h-5 text-primary" />
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-lg ${(CATEGORY_META[test.category] ?? DEFAULT_META).tile}`}>
+          {(CATEGORY_META[test.category] ?? DEFAULT_META).emoji}
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-bold text-sm leading-snug">{test.name}</h3>
@@ -232,6 +244,7 @@ export default function TestsPage() {
   const [tests, setTests] = useState<TestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleRedeem = async (t: TestRow) => {
     const ok = await redeemVoucher(t.id);
@@ -265,11 +278,19 @@ export default function TestsPage() {
     [tests],
   );
   const allBrowseTests = useMemo(() => {
-    const others = tests.filter((t) => !t.is_integrated);
-    if (activeCategory === "all") return others;
-    if (activeCategory === "free") return others.filter((t) => t.is_free);
-    return others.filter((t) => t.category === activeCategory);
-  }, [tests, activeCategory]);
+    let others = tests.filter((t) => !t.is_integrated);
+    if (activeCategory === "free") others = others.filter((t) => t.is_free);
+    else if (activeCategory !== "all") others = others.filter((t) => t.category === activeCategory);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      others = others.filter((t) =>
+        [t.name, t.related_syndrome, t.description]
+          .filter(Boolean)
+          .some((s) => s.toLowerCase().includes(q)),
+      );
+    }
+    return others;
+  }, [tests, activeCategory, searchQuery]);
 
   const { price: singleTestPrice, isAcademyStudent } = useSingleTestPrice();
   const priceMap = useMemo(() => {
@@ -337,6 +358,17 @@ export default function TestsPage() {
           </p>
         </div>
 
+        {/* 검색 */}
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="고민 키워드로 찾아보세요 (예: 불안, 수면, 미루기)"
+            className="pl-10 rounded-full border-border/60"
+          />
+        </div>
+
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
           {CATEGORY_FILTERS.map((cat) => (
             <button
@@ -358,7 +390,11 @@ export default function TestsPage() {
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-56 rounded-2xl" />)}
           </div>
         ) : allBrowseTests.length === 0 ? (
-          <p className="text-center py-12 text-sm text-muted-foreground">해당 카테고리의 검사가 아직 없어요.</p>
+          <p className="text-center py-12 text-sm text-muted-foreground">
+            {searchQuery.trim()
+              ? `"${searchQuery.trim()}"에 맞는 검사를 못 찾았어요. 다른 키워드로 찾아볼까요?`
+              : "해당 카테고리의 검사가 아직 없어요."}
+          </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {allBrowseTests.map((test) => {
