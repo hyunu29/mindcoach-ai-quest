@@ -16,6 +16,17 @@ export const CHITO_MAIN_URL = '/chito/main.webp';
 export const CHITO_EMBLEM_URL = '/brand/emblem.png';
 export const MYCH_WORDMARK_URL = '/brand/wordmark.png';
 
+/* 2026-09-07 투명 배경 포즈 세트 (원본 시트에서 ChatGPT 재생성, 512px)
+ * 라이트 UI에서 다크 카드 프레이밍 없이 직접 배치할 때 사용 */
+export const CHITO_POSES = {
+  main: '/chito/transparent/main.png',
+  waving: '/chito/transparent/waving.png',
+  thinking: '/chito/transparent/thinking.png',
+  cheering: '/chito/transparent/cheering.png',
+  sleeping: '/chito/transparent/sleeping.png',
+} as const;
+export type ChitoPose = keyof typeof CHITO_POSES;
+
 export function getChitoEmotionUrl(emotion: PrimaryEmotion): string {
   return `/chito/${emotion}.webp`;
 }

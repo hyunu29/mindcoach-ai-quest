@@ -1,32 +1,33 @@
-import { Brain, MessageCircle, BarChart3, ShieldAlert } from "lucide-react";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import SectionHeader from "@/components/landing/SectionHeader";
 import ChatMockupCard from "@/components/landing/ChatMockupCard";
+import { CHITO_POSES, type ChitoPose } from "@/lib/character/chito";
 
-const features = [
+/* 범용 아이콘 대신 각 상황 속 치토 4컷 (점검 리포트 ① 개선안) */
+const features: { pose: ChitoPose; bg: string; title: string; desc: string }[] = [
   {
-    icon: Brain,
-    title: "AI 심리검사",
-    desc: "26종 표준화 심리검사를 온라인으로 실시하고 즉시 결과를 확인하세요. 4개 하위영역별 분석과 위험도를 시각화합니다.",
-    color: "bg-primary/10 text-primary",
+    pose: "thinking",
+    bg: "bg-primary/10",
+    title: "간이 심리검사",
+    desc: "26종 간이 심리검사를 온라인으로 실시하고 즉시 결과를 확인하세요. 치토가 결과를 알기 쉽게 풀어줘요.",
   },
   {
-    icon: MessageCircle,
+    pose: "waving",
+    bg: "bg-secondary/10",
     title: "AI 맞춤 코칭",
     desc: "검사 결과를 기반으로 32가지 수험생 심리 증후군에 맞는 1:1 대화형 코칭을 제공합니다.",
-    color: "bg-secondary/10 text-secondary",
   },
   {
-    icon: BarChart3,
+    pose: "cheering",
+    bg: "bg-accent/10",
     title: "감정 트래킹",
-    desc: "매일 감정을 기록하고, 주간·월간 패턴을 분석합니다. AI 코치가 대화 중 자동으로 기록해드립니다.",
-    color: "bg-accent/10 text-accent",
+    desc: "매일 감정을 기록하고, 주간·월간 패턴을 분석합니다. 치토가 대화 중 자동으로 기록해줘요.",
   },
   {
-    icon: ShieldAlert,
+    pose: "main",
+    bg: "bg-warning/10",
     title: "위험 신호 감지",
     desc: "자해·자살 위험 신호를 실시간 감지하고, 전문가 연계를 안내하는 안전장치가 작동합니다.",
-    color: "bg-warning/10 text-warning",
   },
 ];
 
@@ -39,7 +40,7 @@ export default function FeaturesSection() {
         <SectionHeader
           className="mb-14"
           eyebrow="핵심 기능"
-          title="AI가 당신의 마음을 분석하고, 코칭합니다"
+          title="치토가 마음을 함께 들여다보고, 코칭합니다"
           subtitle="수험생의 마음 건강을 위한 네 가지 핵심 기능"
         />
 
@@ -50,8 +51,8 @@ export default function FeaturesSection() {
               className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border border-border/50"
               style={{ animationDelay: `${i * 100 + 100}ms` }}
             >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${f.color}`}>
-                <f.icon className="w-6 h-6" />
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${f.bg}`}>
+                <img src={CHITO_POSES[f.pose]} alt="" className="w-11 h-11 object-contain" loading="lazy" />
               </div>
               <h3 className="font-bold text-lg mb-2">{f.title}</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>

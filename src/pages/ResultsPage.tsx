@@ -25,6 +25,7 @@ import {
 } from "@/lib/character/recommend";
 import { CHITO_EMBLEM_URL } from "@/lib/character/chito";
 import ShareResultCard from "@/components/results/ShareResultCard";
+import ChitoCommentCard from "@/components/results/ChitoCommentCard";
 import { useSingleTestPrice } from "@/hooks/useSingleTestPrice";
 import { isFreeTest } from "@/lib/payments/free-tests";
 
@@ -346,6 +347,9 @@ export default function ResultsPage() {
         <h1 className="text-xl font-bold mb-0.5">{result.testName}</h1>
         <p className="text-xs text-muted-foreground">{dateStr} 실시</p>
       </div>
+
+      {/* 치토의 한마디 — 결과를 신호로 번역 (여정 4) */}
+      {result.testId !== 'STAFF-1' && <ChitoCommentCard riskLevel={result.riskLevel} />}
 
       {/* STAFF-1 interpretation card (4-band) */}
       {result.testId === 'STAFF-1' && (() => {

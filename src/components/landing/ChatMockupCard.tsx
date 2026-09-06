@@ -1,4 +1,4 @@
-import { CHITO, CHITO_EMBLEM_URL } from "@/lib/character/chito";
+import { CHITO, CHITO_POSES } from "@/lib/character/chito";
 
 const MESSAGES = [
   { from: "user", text: "요즘 시험만 생각하면 심장이 두근거려요.." },
@@ -21,7 +21,7 @@ export default function ChatMockupCard() {
         {/* 헤더 */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-border/50 bg-muted/40">
           <img
-            src={CHITO_EMBLEM_URL}
+            src={CHITO_POSES.main}
             alt=""
             className="w-9 h-9 rounded-full ring-1 ring-border/60 bg-white object-contain"
           />
@@ -43,7 +43,7 @@ export default function ChatMockupCard() {
             >
               {m.from === "chito" && (
                 <img
-                  src={CHITO_EMBLEM_URL}
+                  src={CHITO_POSES.main}
                   alt=""
                   className="w-6 h-6 rounded-full mr-2 mt-0.5 shrink-0 bg-white ring-1 ring-border/50 object-contain"
                 />

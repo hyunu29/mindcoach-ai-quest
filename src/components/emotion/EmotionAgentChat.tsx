@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { detectCrisisSignal } from "@/data/seed-data";
-import { CHITO_EMBLEM_URL } from "@/lib/character/chito";
+import { CHITO_POSES } from "@/lib/character/chito";
 import {
   emotionOptions,
   secondaryEmotionMap,
@@ -525,9 +525,7 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
       {/* Idle state */}
       {step === 'idle' && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center overflow-hidden">
-            <img src={CHITO_EMBLEM_URL} alt="치토" className="w-20 h-20 object-contain" />
-          </div>
+          <img src={CHITO_POSES.waving} alt="치토" className="w-28 h-28 object-contain animate-chito-float" />
           <p className="text-sm text-muted-foreground text-center">치토가 오늘의 감정을 기록할 수 있도록 도와줄게요</p>
 
           {/* 오늘 기록 요약 — "처음인 척" 방지 */}
@@ -560,7 +558,7 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
                 <div className={`max-w-[85%] ${msg.role === 'user' ? '' : 'flex gap-2'}`}>
                   {msg.role === 'agent' && (
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center shrink-0 mt-1 overflow-hidden">
-                      <img src={CHITO_EMBLEM_URL} alt="치토" className="w-7 h-7 object-contain" />
+                      <img src={CHITO_POSES.main} alt="치토" className="w-7 h-7 object-contain" />
                     </div>
                   )}
                   <div>
