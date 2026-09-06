@@ -32,7 +32,7 @@ export function getChitoEmotionUrl(emotion: PrimaryEmotion): string {
 }
 
 /** 감정별 투명 배경 버전 (라이트 UI용, 2026-09-07)
- * ⚠️ angry는 원본 시트에 화남 표정이 없어 sad 복제 상태 — 신규 일러 도착 시 교체 */
+ * angry는 신규 일러로 교체 완료 (다크 webp는 투명본에 배경 합성해 재생성) */
 export function getChitoTransparentEmotionUrl(emotion: PrimaryEmotion): string {
   return `/chito/transparent/${emotion}.png`;
 }
