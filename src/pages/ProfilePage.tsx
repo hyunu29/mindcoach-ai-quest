@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { CHITO, CHITO_MAIN_URL } from "@/lib/character/chito";
+import MascotCard from "@/components/profile/MascotCard";
 import CodeRedeemCard from "@/components/rewards/CodeRedeemCard";
 import ReferralCard from "@/components/rewards/ReferralCard";
 import AcademyCodeInput, { type AcademyLookup } from "@/components/academy/AcademyCodeInput";
@@ -154,22 +154,8 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {/* Mascot Character */}
-      <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
-        <h2 className="font-bold mb-3">내 마스코트</h2>
-        <div className="flex items-center gap-4">
-          <img
-            src={CHITO_MAIN_URL}
-            alt={CHITO.name}
-            className="w-20 h-20 object-contain"
-            loading="lazy"
-          />
-          <div className="flex-1">
-            <div className="font-bold">{CHITO.name}</div>
-            <div className="text-xs mt-1 text-muted-foreground">{CHITO.copy}</div>
-          </div>
-        </div>
-      </Card>
+      {/* Mascot Character — 함께한 날·기록 스탯으로 소유감 부여 */}
+      {user && <MascotCard userId={user.id} firstMetAt={user.created_at} />}
 
       {/* Profile Edit */}
       <Card className="p-5 rounded-2xl border-border/50 shadow-sm space-y-4">

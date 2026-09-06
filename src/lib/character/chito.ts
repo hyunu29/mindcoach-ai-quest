@@ -30,3 +30,9 @@ export type ChitoPose = keyof typeof CHITO_POSES;
 export function getChitoEmotionUrl(emotion: PrimaryEmotion): string {
   return `/chito/${emotion}.webp`;
 }
+
+/** 감정별 투명 배경 버전 (라이트 UI용, 2026-09-07)
+ * ⚠️ angry는 원본 시트에 화남 표정이 없어 sad 복제 상태 — 신규 일러 도착 시 교체 */
+export function getChitoTransparentEmotionUrl(emotion: PrimaryEmotion): string {
+  return `/chito/transparent/${emotion}.png`;
+}
