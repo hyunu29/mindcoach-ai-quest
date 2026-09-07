@@ -12,7 +12,8 @@ export function useChitoGreeting(userId: string | null, fallback: string, lastRe
     if (!userId) return;
     const d = new Date();
     const dateKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-    const cacheKey = `chito_greeting:${userId}:${dateKey}:${lastRecordKey}`;
+    // v2: 잘린 멘트가 캐시된 v1 키 무효화 (2026-09-07 max_tokens 수정)
+    const cacheKey = `chito_greeting:v2:${userId}:${dateKey}:${lastRecordKey}`;
 
     try {
       const cached = localStorage.getItem(cacheKey);

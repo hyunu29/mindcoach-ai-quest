@@ -94,7 +94,9 @@ ${summary || "(기록 없음)"}`;
         body: JSON.stringify({
           model: GEMINI_MODEL,
           messages: [{ role: "user", content: prompt }],
-          max_tokens: 200,
+          // Gemini 2.5는 내부 thinking 토큰이 max_tokens에 포함됨 —
+          // 200으로 잡으면 생각하다 출력이 잘리므로 넉넉하게. (길이는 프롬프트가 통제)
+          max_tokens: 2048,
         }),
       },
     );
@@ -106,8 +108,13 @@ ${summary || "(기록 없음)"}`;
     }
 
     const data = await res.json();
-    const greeting = (data.choices?.[0]?.message?.content ?? "").trim().replace(/^["“]|["”]$/g, "");
-    if (!greeting) return json(502, { error: "EMPTY" });
+    const choice = data.choices?.[0];
+    const greeting = (choice?.message?.content ?? "").trim().replace(/^["“]|["”]$/g, "");
+    // 토큰 한도로 잘린 응답은 캐시되면 하루 종일 잘린 채 보이므로 실패 처리 (클라이언트 폴백)
+    if (!greeting || choice?.finish_reason === "length") {
+      console.error("greeting truncated or empty", { finish_reason: choice?.finish_reason });
+      return json(502, { error: "TRUNCATED" });
+    }
 
     return json(200, { greeting });
   } catch (e) {
