@@ -7,6 +7,7 @@ interface TestIntroGateProps {
   isIntegrated: boolean;
   questionCount: number;
   durationMinutes: number;
+  category?: string;
   onComplete: () => void;
 }
 
@@ -14,6 +15,30 @@ interface IntroStep {
   quote: string;
   cta: string;
 }
+
+/* 카테고리별 스토리 오프닝 — 검사마다 치토가 다른 이야기로 말을 건다 (청월당식) */
+const CATEGORY_OPENINGS: Record<string, { quote: string; cta: string }> = {
+  A: {
+    quote: "다른 사람들 이야기가\n자꾸 눈에 들어올 때 있지.\n오늘은 남 말고, 네 얘기만 하자.",
+    cta: "그래, 내 얘기 하자",
+  },
+  B: {
+    quote: "열심히 달려온 만큼\n마음도 뜨거워졌을 거야.\n잠깐 멈춰서 열을 재보자.",
+    cta: "응, 잠깐 멈출게",
+  },
+  C: {
+    quote: "마음이 힘들면\n몸이 먼저 신호를 보내기도 해.\n요즘 밤은 좀 어땠어?",
+    cta: "얘기해볼게",
+  },
+  D: {
+    quote: "'나중에 하지'가 쌓이면\n마음이 점점 무거워지더라.\n지금 잠깐만 들여다보자.",
+    cta: "지금 볼래",
+  },
+  E: {
+    quote: "시험 생각만 하면\n마음이 빨라질 때가 있지.\n그 속도, 같이 재볼게.",
+    cta: "같이 재보자",
+  },
+};
 
 /**
  * 검사 몰입 인트로 — 청월당식 캐릭터 스토리텔링 게이트 (전 검사 공통)
@@ -24,10 +49,13 @@ export default function TestIntroGate({
   isIntegrated,
   questionCount,
   durationMinutes,
+  category,
   onComplete,
 }: TestIntroGateProps) {
   const [step, setStep] = useState(0);
   const [leaving, setLeaving] = useState(false);
+
+  const opening = category ? CATEGORY_OPENINGS[category] : undefined;
 
   const steps: IntroStep[] = isIntegrated
     ? [
@@ -41,12 +69,14 @@ export default function TestIntroGate({
         },
       ]
     : [
+        opening
+          ? { quote: opening.quote, cta: opening.cta }
+          : {
+              quote: `이번엔 「${testName}」구나.\n같이 차분하게 들여다보자.`,
+              cta: "응, 좋아",
+            },
         {
-          quote: `이번엔 「${testName}」구나.\n같이 차분하게 들여다보자.`,
-          cta: "응, 좋아",
-        },
-        {
-          quote: `${questionCount}문항, 약 ${durationMinutes}분이면 돼.\n정답은 없어. 지금 느끼는 그대로만\n말해주면 충분해.`,
+          quote: `「${testName}」 — ${questionCount}문항,\n약 ${durationMinutes}분이면 돼.\n정답은 없어. 지금 느끼는 그대로면 충분해.`,
           cta: "좋아, 시작할게",
         },
       ];

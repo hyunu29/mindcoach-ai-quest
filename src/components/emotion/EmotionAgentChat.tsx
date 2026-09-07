@@ -33,9 +33,13 @@ interface EmotionAgentChatProps {
   userId: string;
   onRecordSaved: () => void;
   todayRecord: any | null;
+  /** 홈 임베드: 감정 칩에서 이미 감정을 골라 진입한 경우 해당 감정으로 대화 즉시 시작 */
+  initialEmotion?: PrimaryEmotion;
+  /** 홈 임베드: 날짜/타이틀 헤더 숨김 */
+  hideHeader?: boolean;
 }
 
-export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }: EmotionAgentChatProps) {
+export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord, initialEmotion, hideHeader }: EmotionAgentChatProps) {
   const navigate = useNavigate();
   const [step, setStep] = useState<ConversationStep>('idle');
   const [messages, setMessages] = useState<AgentMessage[]>([]);
@@ -89,6 +93,38 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
     });
     scrollToBottom();
   }, [addMessage, scrollToBottom]);
+
+  // 홈 임베드: 감정을 이미 고르고 들어온 경우 대화를 그 감정으로 즉시 시작
+  const initialStartedRef = useRef(false);
+  useEffect(() => {
+    if (!initialEmotion || initialStartedRef.current) return;
+    initialStartedRef.current = true;
+    const opt = emotionOptions.find(e => e.key === initialEmotion);
+    if (!opt) return;
+    setStep('situation');
+    setSelectedEmotion(initialEmotion);
+    setMessages([
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
+        role: 'agent',
+        content: "안녕! 오늘 하루를 돌아보면, 지금 마음이 어떤 느낌이야?",
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
+        role: 'user',
+        content: `${opt.emoji} ${opt.label}`,
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
+        role: 'agent',
+        content: pickRandom(turn1Responses[initialEmotion]),
+      },
+    ]);
+    scrollToBottom();
+  }, [initialEmotion, scrollToBottom]);
 
   // Handle emotion chip selection
   const handleEmotionSelect = useCallback((emotionKey: string) => {
@@ -590,12 +626,14 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="text-center py-4">
-        <p className="text-sm text-muted-foreground">
-          {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
-        </p>
-        <h2 className="text-lg font-bold mt-1">오늘 하루는 어땠나요?</h2>
-      </div>
+      {!hideHeader && (
+        <div className="text-center py-4">
+          <p className="text-sm text-muted-foreground">
+            {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+          </p>
+          <h2 className="text-lg font-bold mt-1">오늘 하루는 어땠나요?</h2>
+        </div>
+      )}
 
       {/* Idle state */}
       {step === 'idle' && (

@@ -283,6 +283,7 @@ export default function TestTakingPage() {
         isIntegrated={!!test.is_integrated}
         questionCount={questions.length}
         durationMinutes={test.duration_minutes || 10}
+        category={test.category}
         onComplete={() => {
           sessionStorage.setItem(`test-intro-seen:${test.id}`, "1");
           setShowIntro(false);
