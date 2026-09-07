@@ -4,12 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Send, Check, SkipForward, Pencil, MessageCircle } from "lucide-react";
+import { Send, Check, SkipForward, Pencil, MessageCircle, ImageDown, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { detectCrisisSignal } from "@/data/seed-data";
-import { CHITO_POSES } from "@/lib/character/chito";
+import { CHITO_POSES, getChitoTransparentEmotionUrl } from "@/lib/character/chito";
+import { generateEmotionCardImage } from "@/lib/emotion-card-image";
+import { track } from "@/lib/analytics";
 import {
   emotionOptions,
   secondaryEmotionMap,
@@ -45,6 +47,7 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
   const [journalData, setJournalData] = useState<EmotionJournalData | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
+  const [sharingImage, setSharingImage] = useState(false);
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editSituation, setEditSituation] = useState("");
@@ -413,24 +416,70 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
     return null;
   };
 
-  // Journal card renderer
+  // 공유용 이미지 생성 → Web Share(파일) / 다운로드 폴백
+  const handleShareImage = useCallback(async (journal: EmotionJournalData) => {
+    if (sharingImage) return;
+    setSharingImage(true);
+    try {
+      const blob = await generateEmotionCardImage(journal);
+      const file = new File([blob], `mych-emotion-${Date.now()}.png`, { type: 'image/png' });
+      if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: '오늘의 마음' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast({ title: '이미지를 저장했어요', description: '다운로드 폴더에서 확인해보세요.' });
+      }
+      void track('emotion_card_shared', { emotion: journal.primaryEmotion });
+    } catch (e) {
+      if ((e as Error)?.name !== 'AbortError') {
+        toast({ title: '이미지 생성에 실패했어요', description: '다시 시도해주세요.', variant: 'destructive' });
+      }
+    } finally {
+      setSharingImage(false);
+    }
+  }, [sharingImage]);
+
+  // Journal card renderer — 치토 표정 + 감정 컬러 비주얼 카드
   const renderJournalCard = (journal: EmotionJournalData) => {
     const opt = emotionOptions.find(e => e.key === journal.primaryEmotion);
-    const isNegative = ['sad', 'angry', 'anxious'].includes(journal.primaryEmotion);
-    const isPositive = ['happy', 'calm'].includes(journal.primaryEmotion);
 
     return (
       <div
-        className="rounded-2xl p-4 mt-2 border border-border/30 shadow-sm"
+        className="rounded-2xl p-4 mt-2 border border-border/30 shadow-sm overflow-hidden"
         style={{
           background: `linear-gradient(135deg, ${opt?.gradientFrom || '#F3F4F6'}, ${opt?.gradientTo || '#EDE9FE'})`,
         }}
       >
-        <div className="space-y-2 text-sm">
-          <p className="text-xs text-muted-foreground">📅 {journal.date} {journal.time}</p>
-          <p>💜 주요 감정: {opt?.emoji} {journal.primaryEmotionLabel}
-            {journal.secondaryEmotions.length > 0 && ` → ${journal.secondaryEmotions.join(', ')}`}
-          </p>
+        {/* 헤더 — 치토 표정 + 감정 */}
+        <div className="flex items-center gap-3">
+          <img
+            src={getChitoTransparentEmotionUrl(journal.primaryEmotion)}
+            alt=""
+            className="w-16 h-16 object-contain shrink-0 animate-chito-float"
+          />
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted-foreground">{journal.date} · {journal.time}</p>
+            <p className="text-base font-bold mt-0.5">
+              {opt?.emoji} {journal.primaryEmotionLabel}
+            </p>
+            {journal.secondaryEmotions.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {journal.secondaryEmotions.map((s) => (
+                  <span key={s} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/70 text-foreground/70">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2 text-sm mt-3">
           {journal.situation && (
             isEditing ? (
               <div className="flex gap-2">
@@ -457,14 +506,26 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
                 }}>확인</Button>
               </div>
             ) : (
-              <p>📝 상황: {journal.situation}</p>
+              <p className="text-xs text-foreground/70 bg-white/50 rounded-lg px-3 py-2 leading-relaxed">
+                "{journal.situation}"
+              </p>
             )
           )}
           {journal.bodyReactions.length > 0 && (
-            <p>🫀 신체 반응: {journal.bodyReactions.join(', ')}</p>
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[10px] text-muted-foreground mr-0.5">몸의 신호</span>
+              {journal.bodyReactions.map((b) => (
+                <span key={b} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/70 text-foreground/70">
+                  {b}
+                </span>
+              ))}
+            </div>
           )}
-          <div className={`mt-2 p-2.5 rounded-xl ${isNegative ? 'bg-violet-50/80' : isPositive ? 'bg-green-50/80' : 'bg-gray-50/80'}`}>
-            <p className="text-xs leading-relaxed">💡 {journal.aiComment}</p>
+          <div className="mt-2 p-3 rounded-xl bg-white/70">
+            <p className="text-xs leading-relaxed">
+              <span className="font-bold text-primary mr-1">치토</span>
+              "{journal.aiComment}"
+            </p>
           </div>
         </div>
 
@@ -481,7 +542,19 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
               <Button
                 size="sm"
                 variant="outline"
-                className="rounded-xl flex-1"
+                className="rounded-xl flex-1 bg-white/60"
+                disabled={sharingImage}
+                onClick={() => void handleShareImage(journal)}
+              >
+                {sharingImage
+                  ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                  : <ImageDown className="w-3.5 h-3.5 mr-1" />}
+                이미지로 공유
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl bg-white/60"
                 onClick={() => {
                   setIsEditing(true);
                   setEditSituation(journal.situation);
@@ -489,6 +562,8 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord }:
               >
                 <Pencil className="w-3.5 h-3.5 mr-1" /> 수정
               </Button>
+            </div>
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="hero"
