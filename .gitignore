@@ -47,3 +47,6 @@ docs/sessions/_private/
 docs/sessions/
 docs/plans/
 docs/runbooks/
+
+# 개인·원전 자료 폴더가 실수로 들어와도 커밋되지 않게 (2026-09-08 이동 사고 재발 방지)
+마인드코치 AI/
