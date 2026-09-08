@@ -234,15 +234,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="-m-4 md:-m-8 min-h-[100dvh] relative">
-      {/* 장면 배경 — 시간대별 수채화 (fixed로 은은한 패럴랙스) */}
-      <div className="fixed inset-0 md:left-auto md:right-0 md:w-[calc(100%-0px)]">
-        <img
-          src={scene.src}
-          alt=""
-          className="w-full h-full object-cover"
-          aria-hidden
-        />
+    <div className="-m-4 md:-m-8 min-h-[100dvh] relative overflow-hidden">
+      {/* 장면 배경 — 시간대별 수채화. absolute라 데스크톱 사이드바/탭바를 침범하지 않는다 */}
+      <div className="absolute inset-0" aria-hidden>
+        <img src={scene.src} alt="" className="w-full h-full object-cover" />
       </div>
 
       <div className="relative z-10 max-w-2xl mx-auto p-5 md:p-8 space-y-4 pb-10">
