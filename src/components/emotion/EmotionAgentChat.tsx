@@ -522,7 +522,7 @@ export default function EmotionAgentChat({ userId, onRecordSaved, todayRecord, i
                 <Input
                   value={editSituation}
                   onChange={e => setEditSituation(e.target.value)}
-                  className="flex-1 text-xs rounded-lg bg-white/70"
+                  className="flex-1 rounded-lg bg-white/70"
                 />
                 <Button size="sm" variant="outline" className="text-xs rounded-lg" onClick={() => {
                   setSituation(editSituation);

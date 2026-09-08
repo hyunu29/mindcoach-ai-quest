@@ -26,6 +26,7 @@ import {
 import { CHITO_EMBLEM_URL } from "@/lib/character/chito";
 import ShareResultCard from "@/components/results/ShareResultCard";
 import ChitoCommentCard from "@/components/results/ChitoCommentCard";
+import SyndromeInsightCard from "@/components/results/SyndromeInsightCard";
 import { useSingleTestPrice } from "@/hooks/useSingleTestPrice";
 import { isFreeTest } from "@/lib/payments/free-tests";
 
@@ -434,19 +435,29 @@ export default function ResultsPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Area score bars */}
-          <div className="space-y-2 mt-4">
+          {/* Area score bars — 원전 4구간 밴드 해석 병기 (『증후군 종합 가이드』 채점 기준) */}
+          <div className="space-y-2.5 mt-4">
             {result.subdomains.map((area) => {
               const areaScore = result.subdomainScores[area] || 0;
               const label = area.replace(/\s*\(.*?\)\s*/g, "").replace(/\s*\[.*?\]\s*/g, "");
               const barColor = getBarColor(areaScore, maxAreaScore);
               const widthPct = (areaScore / maxAreaScore) * 100;
+              const band =
+                areaScore <= 10 ? "낮음" : areaScore <= 15 ? "중간" : areaScore <= 20 ? "높음" : "매우 높음";
               return (
                 <div key={area}>
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1 gap-2">
                     <span className="text-xs font-medium truncate">{label}</span>
-                    <span className="text-xs font-bold" style={{ color: barColor }}>
-                      {areaScore}/{maxAreaScore}
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                        style={{ color: barColor, backgroundColor: `${barColor}18` }}
+                      >
+                        {band}
+                      </span>
+                      <span className="text-xs font-bold" style={{ color: barColor }}>
+                        {areaScore}/{maxAreaScore}
+                      </span>
                     </span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -459,6 +470,26 @@ export default function ResultsPage() {
               );
             })}
           </div>
+
+          {/* 치토가 짚은 포인트 — 가장 높은 하위영역 (일반 검사) */}
+          {!isIntegrated && (() => {
+            const sorted = [...result.subdomains]
+              .map((a) => ({ area: a, score: result.subdomainScores[a] || 0 }))
+              .sort((a, b) => b.score - a.score);
+            const top = sorted[0];
+            if (!top || top.score < 11) return null;
+            const topLabel = top.area.replace(/\s*\(.*?\)\s*/g, "").replace(/\s*\[.*?\]\s*/g, "");
+            return (
+              <div className="flex items-start gap-2.5 mt-4 rounded-xl bg-primary/5 border border-primary/15 p-3">
+                <img src={CHITO_EMBLEM_URL} alt="" className="w-6 h-6 object-contain shrink-0 mt-0.5" />
+                <p className="text-xs leading-relaxed">
+                  <span className="font-bold text-primary">치토가 짚은 포인트</span> — 네 경우엔{" "}
+                  <span className="font-semibold">{topLabel}</span> 쪽이 가장 높게 나왔어({top.score}/25).
+                  아래 해볼 수 있는 것들 중에서도 이 부분과 연결된 것부터 시작해보면 좋아.
+                </p>
+              </div>
+            );
+          })()}
         </Card>
       )}
 
@@ -535,20 +566,9 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* Matched Syndrome (general tests only) */}
+      {/* Matched Syndrome deep-dive (general tests only) */}
       {!isIntegrated && result.matchedSyndrome && (
-        <Card className="p-5 rounded-2xl border-border/50 shadow-sm">
-          <h2 className="font-bold mb-3">매칭된 증후군</h2>
-          <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">🧠</span>
-              <span className="font-semibold text-sm">{result.matchedSyndrome}</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              이 증후군에 대한 자세한 코칭을 AI 코칭에서 받아보세요.
-            </p>
-          </div>
-        </Card>
+        <SyndromeInsightCard syndromeName={result.matchedSyndrome} />
       )}
 
       {/* Share */}
